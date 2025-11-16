@@ -65,6 +65,7 @@
 	 	 .buttons-row {
 	 	 	 display: flex;
 	 	 	 flex-wrap: wrap;
+	 	 	 align-items: center;
 	 	 	 gap: 10px;
 	 	 	 margin-top: 10px;
 	 	 }
@@ -156,6 +157,15 @@
 	 	 	 border-bottom: 1px solid #e5e7eb;
 	 	 	 text-align: left;
 	 	 }
+	 	 
+	 	 /* CSS cho dòng thư mục có thể click được */
+	 	 tr.folder-row {
+	 	 	 cursor: pointer;
+	 	 }
+
+	 	 tr.folder-row:hover {
+	 	 	 background: #eef1f4;
+	 	 }
 
 	 	 th {
 	 	 	 background: #f9fafb;
@@ -163,7 +173,7 @@
 	 	 	 color: #4b5563;
 	 	 }
 
-	 	 tr:hover {
+	 	 tr:not(.folder-row):hover {
 	 	 	 background: #f3f4f6;
 	 	 }
 
@@ -292,13 +302,19 @@
 
 	 	 	 	 <section class="card">
 	 	 	 <h2>3. Danh sách file trên Google Drive</h2>
-	 	 	 <small>Liệt kê 20 file gần đây nhất trong "Drive của tôi" (files.list). Đã loại bỏ file trong Thùng rác.</small>
+	 	 	 <small>Bấm vào tên thư mục để duyệt file bên trong.</small>
 
 	 	 	 <div class="buttons-row">
+	 	 	 	 <button id="go_back_button" class="btn btn-outline" disabled style="display: none;">
+	 	 	 	 	 ⬅️ Quay lại
+	 	 	 	 </button>
 	 	 	 	 <button id="list_button" class="btn btn-outline" disabled>
 	 	 	 	 	 🔄 Tải danh sách file
 	 	 	 	 </button>
-	 	 	 	 <span class="text-muted">* Chỉ xem được file trong thư mục gốc của bạn.</span>
+	 	 	 </div>
+	 	 	 
+	 	 	 <div id="breadcrumb_path" class="status" style="margin-top: 10px;">
+	 	 	 	 Đường dẫn hiện tại: <strong>/Drive của tôi</strong>
 	 	 	 </div>
 
 	 	 	 <div id="list_status" class="status">
@@ -339,6 +355,10 @@
 		let gisInited = false;
 		const folderIdCache = {}; 
 		let filesToUpload = []; 
+		
+		// BIẾN ĐIỀU HƯỚNG MỚI
+		let currentFolderId = 'root'; 
+		let folderHistory = [{ id: 'root', name: 'Drive của tôi' }];
 
 		const authorizeButton = document.getElementById("authorize_button");
 		const signoutButton = document.getElementById("signout_button");
@@ -349,7 +369,6 @@
 		const fileInputFiles = document.getElementById("file_input_files");
 		const fileInputFolder = document.getElementById("file_input_folder");
         
-		// BIẾN TIẾN TRÌNH MỚI
 		const progressDisplay = document.getElementById("progress_display");
 		const progressText = document.getElementById("progress_text");
 		const progressBarInner = document.getElementById("progress_bar_inner");
@@ -358,6 +377,16 @@
 		const listButton = document.getElementById("list_button");
 		const listStatus = document.getElementById("list_status");
 		const filesTbody = document.getElementById("files_tbody");
+		
+		// BIẾN ĐIỀU HƯỚNG MỚI
+		const goBackButton = document.getElementById("go_back_button");
+		const breadcrumbPath = document.getElementById("breadcrumb_path");
+		
+		// Xử lý nút Quay lại
+		goBackButton.onclick = () => {
+			navigateHistory(folderHistory.length - 2);
+		};
+
 
 		// Gọi khi api.js load xong
 		function gapiLoaded() {
@@ -424,7 +453,6 @@
 				uploadStatus.classList.remove("error", "success");
 				uploadButton.disabled = true;
 			}
-			// Ẩn tiến trình khi không có file
 			progressDisplay.style.display = 'none';
 		}
 
@@ -450,6 +478,9 @@
 			signoutButton.disabled = false;
 			listButton.disabled = false;
 			updateUploadInputStatus(); 
+			
+			// Tải danh sách file ngay khi đăng nhập thành công
+			listFiles(); 
 			 };
 
 			 const token = gapi.client.getToken();
@@ -475,13 +506,20 @@
 			 listButton.disabled = true;
 			filesToUpload = []; 
 			progressDisplay.style.display = 'none';
+			filesTbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;">Vui lòng đăng nhập để xem danh sách file.</td></tr>';
+			listStatus.textContent = "Chưa tải danh sách file.";
+			
+			// Reset điều hướng
+			currentFolderId = 'root';
+			folderHistory = [{ id: 'root', name: 'Drive của tôi' }];
+			renderBreadcrumb();
 
 			 authStatus.textContent = "Đã đăng xuất. Cần đăng nhập lại để sử dụng.";
 			 authStatus.classList.remove("success");
 		};
         
         // =========================================================
-        // === HÀM XỬ LÝ UPLOAD THƯ MỤC/NHIỀU FILE (SỬA LỖI TIẾN TRÌNH) ===
+        // === HÀM XỬ LÝ UPLOAD ===
         // =========================================================
         
 		// Hàm kiểm tra và tạo Folder trên Drive nếu cần
@@ -497,7 +535,7 @@
 					continue;
 				}
 
-				const query = `name = '${segment.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and '${currentParentId}' in parents`;
+				const query = `name = '${segment.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and '${currentParentId}' in parents and trashed = false`;
 				const searchRes = await gapi.client.drive.files.list({
 					q: query,
 					fields: 'files(id)',
@@ -579,6 +617,7 @@
 					const metadata = {
 						name: file.name,
 						mimeType: file.type || "application/octet-stream",
+						// Upload vào thư mục gốc của Drive hoặc thư mục cha đã tạo.
 						parents: [parentFolderId], 
 					};
 					
@@ -645,7 +684,10 @@
 				filesToUpload = []; 
 				updateUploadInputStatus(); 
 
-				await listFiles();
+				// Nếu upload vào thư mục hiện tại, tải lại danh sách file
+				if (currentFolderId === 'root') {
+					await listFiles();
+				}
 				
 			} catch (error) {
 				console.error(error);
@@ -660,16 +702,54 @@
 		};
         
         // =========================================================
-        // === HÀM LIỆT KÊ FILE (ĐÃ SỬA: Loại bỏ file trong Thùng rác) ===
+        // === HÀM LIỆT KÊ FILE VÀ ĐIỀU HƯỚNG ===
         // =========================================================
+		
+		// Hàm điều hướng lịch sử
+		function navigateHistory(index) {
+			if (index < 0 || index >= folderHistory.length - 1) return;
+			
+			const targetFolder = folderHistory[index];
+			folderHistory = folderHistory.slice(0, index + 1);
+			
+			listFiles(targetFolder.id, targetFolder.name);
+		}
+		
+		// Hàm render breadcrumb
+		function renderBreadcrumb() {
+			let path = 'Đường dẫn hiện tại: ';
+			
+			// Tạo chuỗi đường dẫn với các thư mục cha có thể click được
+			path += folderHistory.map((item, index) => {
+				if (index < folderHistory.length - 1) {
+					// Sử dụng function navigateHistory() để chuyển thư mục
+					return `<a href="javascript:void(0)" class="link" onclick="navigateHistory(${index})">${item.name}</a>`;
+				}
+				return `<strong>${item.name}</strong>`;
+			}).join(' / ');
+			
+			breadcrumbPath.innerHTML = path;
+			
+			// Cập nhật trạng thái nút Quay lại
+			if (folderHistory.length > 1) {
+				goBackButton.disabled = false;
+				goBackButton.style.display = 'inline-flex';
+			} else {
+				goBackButton.disabled = true;
+				goBackButton.style.display = 'none';
+			}
+		}
+
 
 		// List files khi bấm nút
 		listButton.onclick = () => {
-			 listFiles();
+			// Thiết lập lại thư mục gốc và tải lại
+			folderHistory = [{ id: 'root', name: 'Drive của tôi' }];
+			listFiles('root', 'Drive của tôi');
 		};
 
-		// Hàm liệt kê file
-		async function listFiles() {
+		// Hàm liệt kê file (nhận folderId làm tham số)
+		async function listFiles(folderId = 'root') {
 			 listStatus.classList.remove("error", "success");
 			 const token = gapi.client.getToken();
 			 if (!token) {
@@ -677,24 +757,30 @@
 			listStatus.classList.add("error");
 			return;
 			 }
+			
+			 // Cập nhật ID thư mục hiện tại
+			currentFolderId = folderId;
+			renderBreadcrumb(); // Cập nhật đường dẫn
 
 			 listButton.disabled = true;
 			 listStatus.textContent = "Đang tải danh sách file...";
+			 filesTbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;">Đang tải...</td></tr>';
 
 			 try {
 			const response = await gapi.client.drive.files.list({
-				 pageSize: 20,
+				 pageSize: 50, // Tăng giới hạn hiển thị
 				 fields: "files(id,name,mimeType,modifiedTime,iconLink,webViewLink,size)",
-				 orderBy: "modifiedTime desc",
-				 // SỬA ĐỔI: Chỉ lấy các mục nằm trực tiếp trong thư mục gốc VÀ KHÔNG BỊ XOÁ (trashed = false)
-				 q: "'root' in parents and trashed = false", 
+				 // Ưu tiên hiển thị Folder trước, sau đó sắp xếp theo tên
+				 orderBy: "folder,name",
+				 // Truy vấn: chỉ lấy các mục có thư mục cha là currentFolderId VÀ KHÔNG BỊ XOÁ
+				 q: `'${currentFolderId}' in parents and trashed = false`, 
 			});
 
 			const files = response.result.files || [];
 			filesTbody.innerHTML = "";
 
 			if (files.length === 0) {
-				 listStatus.textContent = "Không tìm thấy file/thư mục nào trong thư mục gốc của Drive của bạn.";
+				 listStatus.textContent = "Không tìm thấy file/thư mục nào trong thư mục này.";
 				 listStatus.classList.add("success");
 				 return;
 			}
@@ -702,10 +788,20 @@
 			for (const file of files) {
 				 const tr = document.createElement("tr");
 
+				 const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
+				 
+				 // Gắn sự kiện click vào hàng nếu đó là thư mục
+				 if (isFolder) {
+				tr.classList.add('folder-row');
+				tr.onclick = () => {
+					// Thêm thư mục vào lịch sử và tải danh sách file mới
+					folderHistory.push({ id: file.id, name: file.name });
+					listFiles(file.id); 
+				};
+				 }
+
 				 const nameTd = document.createElement("td");
 				 nameTd.textContent = file.name || "(Không tên)";
-
-				 const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
 
 				 const typeTd = document.createElement("td");
 				 const tag = document.createElement("span");
@@ -731,6 +827,11 @@
 				a.rel = "noopener noreferrer";
 				a.className = "link";
 				a.textContent = "Mở";
+				// Nếu là folder, không cho phép click vào link ở cột này (vì đã click vào row)
+				if (isFolder) {
+					a.style.opacity = '0.5';
+					a.onclick = (e) => { e.stopPropagation(); };
+				}
 				linkTd.appendChild(a);
 				 } else {
 				linkTd.textContent = "-";
