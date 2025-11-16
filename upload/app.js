@@ -274,7 +274,6 @@
       if (!file) {
         uploadStatus.textContent = "Vui lòng chọn 1 file để upload.";
         uploadStatus.classList.add("error");
-        return;
       }
 
       uploadButton.disabled = true;
