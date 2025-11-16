@@ -115,7 +115,7 @@ const loadComicPages = async () => {
     // Lặp qua số trang tối đa để tìm tệp ảnh
     for (let i = 1; i <= MAX_PAGES; i++) {
         // Định dạng số trang thành 5 chữ số (ví dụ: 1 -> "001", 10 -> "010")
-        const pageNumber = i.toString().padStart(5, '0');
+        const pageNumber = (i - 1).toString().padStart(5, '0');
         
         const basePath = `${COMIC_ROOT_FOLDER}${folderName}/${pageNumber}`;
 
