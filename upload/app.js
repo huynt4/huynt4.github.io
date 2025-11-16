@@ -17,7 +17,7 @@ const securePasswordInput = document.getElementById('secure_password');
 const checkPasswordButton = document.getElementById('check_password_button');
 const clearPasswordButton = document.getElementById('clear_password_button');
 const passwordStatus = document.getElementById('password_status');
-const loginApiButton = document.getElementById('login_api_button'); // nút API (thêm vào HTML)
+const loginApiButton = document.getElementById('login_api_button');
 const authorizeButton = document.getElementById("authorize_button");
 const signoutButton = document.getElementById("signout_button");
 const authStatus = document.getElementById("auth_status");
@@ -27,6 +27,7 @@ const fileInput = document.getElementById("file_input");
 const listButton = document.getElementById("list_button");
 const listStatus = document.getElementById("list_status");
 const filesTbody = document.getElementById("files_tbody");
+const uploadProgressEl = document.getElementById('upload_progress');
 
 
 // Helper: SHA-256 -> hex (Web Crypto)
@@ -38,7 +39,7 @@ async function sha256hex(str) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Lấy hash đã lưu (nếu bạn muốn lưu hash khi user "set pw")
+// Lấy hash đã lưu
 function storedHash() { return localStorage.getItem('drive_app_pw_hash') || '5be803e5a0a473fc61b7ef05579acee57c90fb42d3c229ad77a64013a50c0b70'; }
 
 // ---- Logic cho Password Gate ----
@@ -57,13 +58,11 @@ if (checkPasswordButton) {
             unlocked = true;
             passwordStatus.textContent = 'Mở khóa thành công.';
             passwordStatus.className = 'status success';
-            // Cập nhật trạng thái auth nếu gapi/gis đã sẵn sàng
             maybeEnableAuthButton();
         } else {
             unlocked = false;
             passwordStatus.textContent = 'Mật khẩu không đúng.';
             passwordStatus.className = 'status error';
-            // Tắt các nút login nếu bị sai
             if (authorizeButton) authorizeButton.disabled = true;
             if (loginApiButton) loginApiButton.disabled = true;
         }
@@ -76,7 +75,7 @@ if (clearPasswordButton) {
         localStorage.removeItem('drive_app_pw_hash');
         passwordStatus.textContent = 'Đã xóa mật khẩu (hash) khỏi localStorage.';
         passwordStatus.className = 'status';
-        unlocked = false; // Khóa lại
+        unlocked = false; 
         if (authorizeButton) authorizeButton.disabled = true;
         if (loginApiButton) loginApiButton.disabled = true;
     });
@@ -111,7 +110,7 @@ function gisLoaded() {
     tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
-        callback: "", // sẽ gán sau
+        callback: "",
     });
     gisInited = true;
     maybeEnableAuthButton();
@@ -125,7 +124,6 @@ function maybeEnableAuthButton() {
         authStatus.textContent = 'Sẵn sàng. Chọn phương thức đăng nhập.';
     } else if (gapiInited && gisInited && !unlocked) {
         authStatus.textContent = 'Thư viện đã sẵn sàng — nhập mật khẩu để mở tùy chọn đăng nhập.';
-        // Đảm bảo nút login bị disabled nếu chưa unlock
         if (authorizeButton) authorizeButton.disabled = true;
         if (loginApiButton) loginApiButton.disabled = true;
     }
@@ -133,14 +131,19 @@ function maybeEnableAuthButton() {
 
 
 // ---- Xử lý Đăng nhập/Đăng xuất ----
-authorizeButton.onclick = () => {
+
+// Hàm xử lý chung cho cả hai nút đăng nhập
+const handleAuthClick = () => {
     if (!unlocked) {
         authStatus.textContent = 'Vui lòng nhập mật khẩu để mở khóa trước khi đăng nhập.';
         authStatus.classList.add("error");
         return;
     }
     
-    authorizeButton.disabled = true;
+    // Tắt các nút để tránh nhấp đúp
+    if (authorizeButton) authorizeButton.disabled = true;
+    if (loginApiButton) loginApiButton.disabled = true;
+    
     authStatus.textContent = "Đang mở popup đăng nhập...";
 
     tokenClient.callback = async (resp) => {
@@ -148,9 +151,12 @@ authorizeButton.onclick = () => {
             console.error(resp);
             authStatus.textContent = "Lỗi đăng nhập: " + (resp.error || "Unknown error");
             authStatus.classList.add("error");
-            authorizeButton.disabled = false;
+            // Bật lại các nút nếu có lỗi
+            if (authorizeButton) authorizeButton.disabled = false;
+            if (loginApiButton) loginApiButton.disabled = false;
             return;
         }
+        
         // Đăng nhập xong
         authStatus.textContent = "Đã đăng nhập và cấp quyền cho Google Drive.";
         authStatus.classList.remove("error");
@@ -160,6 +166,9 @@ authorizeButton.onclick = () => {
         signoutButton.disabled = false;
         uploadButton.disabled = false;
         listButton.disabled = false;
+        
+        // Vô hiệu hóa nút API sau khi đăng nhập thành công
+        if (loginApiButton) loginApiButton.disabled = true;
     };
 
     const token = gapi.client.getToken();
@@ -172,6 +181,14 @@ authorizeButton.onclick = () => {
     }
 };
 
+// Gán sự kiện cho cả hai nút đăng nhập
+if (authorizeButton) {
+    authorizeButton.onclick = handleAuthClick;
+}
+if (loginApiButton) {
+    loginApiButton.onclick = handleAuthClick; // Đã thêm xử lý cho nút này
+}
+
 // Đăng xuất
 signoutButton.onclick = () => {
     const token = gapi.client.getToken();
@@ -181,7 +198,9 @@ signoutButton.onclick = () => {
     }
 
     authorizeButton.textContent = "🔐 Đăng nhập Google";
-    authorizeButton.disabled = false;
+    if (authorizeButton) authorizeButton.disabled = false;
+    if (loginApiButton) loginApiButton.disabled = false; // Bật lại nút API
+    
     signoutButton.disabled = true;
     uploadButton.disabled = true;
     listButton.disabled = true;
@@ -191,66 +210,88 @@ signoutButton.onclick = () => {
 };
 
 
-// ---- Xử lý Upload File (Sử dụng gapi.client.request) ----
-uploadButton.onclick = async () => {
-    uploadStatus.classList.remove('error', 'success');
-    const token = gapi.client.getToken();
+// ---- Xử lý Upload File (Sử dụng XMLHttpRequest để có Progress Bar) ----
+uploadButton.onclick = () => {
+	uploadStatus.classList.remove('error', 'success');
+	if (uploadProgressEl) uploadProgressEl.textContent = '';
     
-    if (!token) {
-        uploadStatus.textContent = "Bạn cần đăng nhập Google trước.";
-        uploadStatus.classList.add("error");
-        return;
-    }
+	const token = gapi.client.getToken();
+	if (!token) {
+		uploadStatus.textContent = "Bạn cần đăng nhập Google trước.";
+		uploadStatus.classList.add("error");
+		return;
+	}
 
-    const file = fileInput.files[0];
-    if (!file) {
-        uploadStatus.textContent = "Vui lòng chọn 1 file để upload.";
-        uploadStatus.classList.add("error");
-        return;
-    }
+	const file = fileInput.files[0];
+	if (!file) {
+		uploadStatus.textContent = "Vui lòng chọn 1 file để upload.";
+		uploadStatus.classList.add("error");
+		return;
+	}
 
-    uploadButton.disabled = true;
-    uploadStatus.textContent = "Đang upload lên Google Drive...";
+	uploadButton.disabled = true;
+	uploadStatus.textContent = "Đang upload lên Google Drive...";
 
-    try {
-        const metadata = {
-            name: file.name,
-            mimeType: file.type || "application/octet-stream",
-        };
+	try {
+		const metadata = {
+			name: file.name,
+			mimeType: file.type || "application/octet-stream",
+		};
 
-        // Đọc nội dung file
-        const fileContent = await file.text(); 
-        
-        // Sử dụng gapi.client.request cho multipart upload
-        const response = await gapi.client.request({
-            path: 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'multipart/related; boundary=foo_bar_baz'
-            },
-            body: 
-                '--foo_bar_baz\r\n' +
-                'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-                JSON.stringify(metadata) +
-                '\r\n--foo_bar_baz\r\n' +
-                `Content-Type: ${file.type || 'application/octet-stream'}\r\n\r\n` +
-                fileContent + // Gửi nội dung file
-                '\r\n--foo_bar_baz--'
-        });
+		const form = new FormData();
+		// Thêm metadata dưới dạng Blob
+		form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+		// Thêm nội dung file
+		form.append("file", file); 
 
-        uploadStatus.textContent = `Upload thành công: ${response.result.name}`;
-        uploadStatus.classList.add("success");
+		const xhr = new XMLHttpRequest();
+		xhr.open(
+			"POST",
+			"https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,iconLink,size,mimeType"
+		);
 
-        // Sau khi upload, reload danh sách file
-        await listFiles();
-    } catch (error) {
-        console.error(error);
-        const errorMessage = error.body ? JSON.parse(error.body).error.message : error.message;
-        uploadStatus.textContent = "Lỗi upload: " + errorMessage;
-        uploadStatus.classList.add("error");
-    } finally {
-        uploadButton.disabled = false;
-    }
+		xhr.setRequestHeader("Authorization", "Bearer " + token.access_token);
+
+		// Xử lý thanh tiến trình
+		xhr.upload.onprogress = (evt) => {
+			if (evt.lengthComputable && uploadProgressEl) {
+				const loaded = evt.loaded;
+				const total = evt.total || file.size;
+				uploadProgressEl.textContent = `${formatBytes(loaded)} / ${formatBytes(total)} (${Math.round((loaded/total)*100)}%)`;
+			}
+		};
+
+		// Xử lý kết quả trả về
+		xhr.onload = async () => {
+			if (xhr.status >= 200 && xhr.status < 300) {
+				const data = JSON.parse(xhr.responseText);
+				uploadStatus.textContent = `Upload thành công: ${data.name}`;
+				uploadStatus.classList.add("success");
+				if (uploadProgressEl) uploadProgressEl.textContent = '';
+				// reload danh sách file
+				await listFiles();
+			} else {
+				const err = xhr.responseText || xhr.statusText;
+				uploadStatus.textContent = "Lỗi upload: " + err;
+				uploadStatus.classList.add("error");
+			}
+			uploadButton.disabled = false;
+		};
+
+		// Xử lý lỗi mạng
+		xhr.onerror = () => {
+			uploadStatus.textContent = "Lỗi mạng khi upload.";
+			uploadStatus.classList.add("error");
+			uploadButton.disabled = false;
+		};
+
+		xhr.send(form);
+	} catch (error) {
+		console.error(error);
+		uploadStatus.textContent = "Lỗi upload: " + error.message;
+		uploadStatus.classList.add("error");
+		uploadButton.disabled = false;
+	}
 };
 
 
@@ -350,5 +391,6 @@ function formatBytes(bytes) {
     const k = 1024;
     const sizes = ["B", "KB", "MB", "GB", "TB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
+    // Làm tròn đến 1 chữ số thập phân
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 }
