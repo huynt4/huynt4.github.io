@@ -305,7 +305,7 @@
 	 	 const API_KEY = "AIzaSyCxJzJVa5OUlnPDKvyxiUqkIJGQ8-hxZtU"; // API key
 
 	 	 // Scope: quyền truy cập file tạo bởi app
-		const SCOPES = "https://www.googleapis.com/auth/drive.readonly";
+		const SCOPES = "https://www.googleapis.com/auth/drive.file";
 	 	 const DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
 	 	 // -------------------------------------------------------
 
@@ -506,7 +506,7 @@
 	 	 	 	 	 pageSize: 20,
 	 	 	 	 	 fields: "files(id,name,mimeType,modifiedTime,iconLink,webViewLink,size)",
 	 	 	 	 	 orderBy: "modifiedTime desc",
-			 // ĐÃ XÓA DÒNG q: "mimeType != 'application/vnd.google-apps.folder'", để hiển thị cả folder
+					q: "'me' in owners and 'appDataFolder' not in parents",
 	 	 	 	 });
 
 	 	 	 	 const files = response.result.files || [];
