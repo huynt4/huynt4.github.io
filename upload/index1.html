@@ -246,14 +246,25 @@
 	 	 	 <small>Scope: <code>https://www.googleapis.com/auth/drive</code> (Toàn quyền)</small>
 
 	 	 	 <div class="file-section">
-	 	 	 	 <input type="file" id="file_input" multiple webkitdirectory>
-	 	 	 	 <button id="upload_button" class="btn btn-outline" disabled>
+	 	 	 	 	 	 	 	 <label for="file_input_files" class="btn btn-outline">
+	 	 	 	 	 📂 Chọn File (nhiều file)
+	 	 	 	 </label>
+	 	 	 	 <input type="file" id="file_input_files" multiple style="display: none;">
+
+	 	 	 	 	 	 	 	 <label for="file_input_folder" class="btn btn-outline">
+	 	 	 	 	 📁 Chọn Thư mục
+	 	 	 	 </label>
+	 	 	 	 <input type="file" id="file_input_folder" webkitdirectory style="display: none;">
+	 	 	 </div>
+
+	 	 	 <div class="buttons-row">
+	 	 	 	 <button id="upload_button" class="btn btn-primary" disabled>
 	 	 	 	 	 ⬆️ Upload lên Drive
 	 	 	 	 </button>
 	 	 	 </div>
-
+	 	 	 
 	 	 	 <div id="upload_status" class="status">
-	 	 	 	 Chưa có thao tác upload nào.
+	 	 	 	 Chưa có tệp nào được chọn.
 	 	 	 </div>
 	 	 </section>
 
@@ -307,6 +318,7 @@
 		let gapiInited = false;
 		let gisInited = false;
 		const folderIdCache = {}; // Cache lưu trữ ID của các folder đã tạo
+		let filesToUpload = []; // Danh sách file/folder đã chọn
 
 		const authorizeButton = document.getElementById("authorize_button");
 		const signoutButton = document.getElementById("signout_button");
@@ -314,7 +326,10 @@
 
 		const uploadButton = document.getElementById("upload_button");
 		const uploadStatus = document.getElementById("upload_status");
-		const fileInput = document.getElementById("file_input");
+		
+		// CÁC BIẾN INPUT ĐÃ ĐƯỢC TÁCH RIÊNG
+		const fileInputFiles = document.getElementById("file_input_files");
+		const fileInputFolder = document.getElementById("file_input_folder");
 
 		const listButton = document.getElementById("list_button");
 		const listStatus = document.getElementById("list_status");
@@ -350,6 +365,18 @@
 			callback: "", // sẽ gán sau
 			 });
 			 gisInited = true;
+			
+			// Lắng nghe sự kiện chọn file/folder ngay sau khi GIS load
+			fileInputFiles.onchange = (e) => {
+				filesToUpload = Array.from(e.target.files);
+				updateUploadInputStatus();
+			};
+
+			fileInputFolder.onchange = (e) => {
+				filesToUpload = Array.from(e.target.files);
+				updateUploadInputStatus();
+			};
+			
 			 maybeEnableAuthButton();
 		}
 
@@ -359,6 +386,19 @@
 			authorizeButton.disabled = false;
 			authStatus.textContent = "Sẵn sàng. Bấm \"Đăng nhập Google\" để cấp quyền.";
 			 }
+		}
+
+		// Cập nhật trạng thái sau khi chọn file/folder
+		function updateUploadInputStatus() {
+			const count = filesToUpload.length;
+			if (count > 0) {
+				uploadStatus.textContent = `Sẵn sàng upload ${count} mục.`;
+				uploadStatus.classList.remove("error");
+				uploadButton.disabled = false;
+			} else {
+				uploadStatus.textContent = "Chưa có tệp nào được chọn.";
+				uploadButton.disabled = true;
+			}
 		}
 
 		// Khi bấm Đăng nhập
@@ -381,8 +421,9 @@
 
 			authorizeButton.textContent = "✅ Đã đăng nhập";
 			signoutButton.disabled = false;
-			uploadButton.disabled = false;
 			listButton.disabled = false;
+			// Upload button được enable qua updateUploadInputStatus
+			updateUploadInputStatus(); 
 			 };
 
 			 const token = gapi.client.getToken();
@@ -408,6 +449,7 @@
 			 signoutButton.disabled = true;
 			 uploadButton.disabled = true;
 			 listButton.disabled = true;
+			filesToUpload = []; // Reset danh sách file
 
 			 authStatus.textContent = "Đã đăng xuất. Cần đăng nhập lại để sử dụng.";
 			 authStatus.classList.remove("success");
@@ -432,6 +474,7 @@
 				}
 
 				// Tìm kiếm Folder trong thư mục cha hiện tại
+				// Thay thế ' bằng \' để tránh lỗi trong chuỗi query
 				const query = `name = '${segment.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and '${currentParentId}' in parents`;
 				const searchRes = await gapi.client.drive.files.list({
 					q: query,
@@ -473,7 +516,8 @@
 				return;
 			}
 
-			const files = fileInput.files;
+			// LẤY DANH SÁCH FILES TỪ BIẾN GLOBAL ĐÃ ĐƯỢC CHỌN
+			const files = filesToUpload; 
 			if (files.length === 0) {
 				uploadStatus.textContent = "Vui lòng chọn file hoặc thư mục để upload.";
 				uploadStatus.classList.add("error");
@@ -500,6 +544,7 @@
 					// 1. Xử lý đường dẫn thư mục cha
 					let parentFolderId = 'root'; // Upload vào Drive của tôi
 
+					// Chỉ chạy logic tạo folder nếu người dùng chọn upload thư mục (sẽ có webkitRelativePath)
 					if (file.webkitRelativePath) {
 						// Lấy các thành phần đường dẫn thư mục (loại bỏ tên file)
 						const parts = file.webkitRelativePath.split('/');
@@ -555,6 +600,10 @@
 					uploadStatus.classList.add("error");
 					uploadStatus.classList.remove("success");
 				}
+
+				// Reset filesToUpload và cập nhật trạng thái
+				filesToUpload = []; 
+				updateUploadInputStatus(); 
 
 				await listFiles();
 				
