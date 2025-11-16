@@ -206,3 +206,10 @@
         width: 100%;
       }
     }
+	#pw_section input[type="password"]{
+	  padding: 8px 12px;
+	  border: 1px solid #d1d5db;
+	  border-radius: 8px;
+	  font-size: 14px;
+	  max-width: 320px;
+	}
