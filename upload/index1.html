@@ -471,7 +471,8 @@
         }
 
         const data = await res.json();
-        uploadStatus.textContent = `Upload thành công: ${data.name}`;
+        **const fileSize = data.size ? formatBytes(parseInt(data.size, 10)) : "Không rõ";**
+		**uploadStatus.textContent = `Upload thành công: ${data.name} (${fileSize})`;**
         uploadStatus.classList.add("success");
 
         // Sau khi upload, reload danh sách file
@@ -508,6 +509,7 @@
           pageSize: 20,
           fields: "files(id,name,mimeType,modifiedTime,iconLink,webViewLink,size)",
           orderBy: "modifiedTime desc",
+		  **q: "mimeType != 'application/vnd.google-apps.folder'",**
         });
 
         const files = response.result.files || [];
