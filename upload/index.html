@@ -1,0 +1,77 @@
+<!doctype html>
+<section class="card">
+<h2>1. Đăng nhập</h2>
+<small>Sau khi mở khóa, bạn sẽ thấy 2 tuỳ chọn: Đăng nhập bằng Google (OAuth) hoặc Đăng nhập = API (nhập API key — chú ý: API key không cho phép truy cập file riêng tư của người dùng).</small>
+
+
+<div class="buttons-row" id="login_buttons_row" style="display:none">
+<button id="authorize_button" class="btn btn-primary" disabled>🔐 Đăng nhập Google</button>
+<button id="login_api_button" class="btn btn-outline" disabled>🔑 Đăng nhập = API</button>
+<button id="signout_button" class="btn btn-outline" disabled>🚪 Đăng xuất</button>
+</div>
+
+
+<div id="auth_status" class="status">Trạng thái: <strong>Chưa sẵn sàng</strong> (đang tải thư viện Google...)</div>
+</section>
+
+
+<!-- Upload file -->
+<section class="card">
+<h2>2. Upload file lên Google Drive</h2>
+<small>Scope cơ bản: <code>https://www.googleapis.com/auth/drive.file</code></small>
+
+
+<div class="file-section">
+<input type="file" id="file_input">
+<button id="upload_button" class="btn btn-outline" disabled>⬆️ Upload lên Drive</button>
+</div>
+
+
+<div id="upload_status" class="status">Chưa có thao tác upload nào.</div>
+<div id="upload_progress" class="status text-muted">0 B / 0 B</div>
+</section>
+
+
+<!-- Danh sách file -->
+<section class="card">
+<h2>3. Danh sách file trên Google Drive</h2>
+<small>Liệt kê 20 file gần đây nhất (files.list) — có hỗ trợ hiển thị folder. Nếu muốn xem mọi file/folder cần xin thêm scope <code>drive.readonly</code>.</small>
+
+
+<div class="buttons-row">
+<button id="list_button" class="btn btn-outline" disabled>🔄 Tải danh sách file</button>
+<button id="list_with_readonly" class="btn btn-outline" disabled>📁 Tải (kèm folders, xin scope drive.readonly)</button>
+<span class="text-muted">* Chỉ xem được file mà app / token có quyền truy cập.</span>
+</div>
+
+
+<div id="list_status" class="status">Chưa tải danh sách file.</div>
+
+
+<table>
+<thead>
+<tr>
+<th>Tên file</th>
+<th>Loại</th>
+<th>Cập nhật</th>
+<th>Kích thước</th>
+<th>Xem</th>
+</tr>
+</thead>
+<tbody id="files_tbody"></tbody>
+</table>
+</section>
+
+
+<footer>Code demo · Bạn cần thay <strong>CLIENT_ID</strong> và <strong>API_KEY</strong> trong file <code>app.js</code> nếu muốn chạy.</footer>
+</main>
+
+
+<!-- JS SDKs Google -->
+<script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+<script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+
+
+<script src="app.js"></script>
+</body>
+</html>
