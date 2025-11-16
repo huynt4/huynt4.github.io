@@ -1,14 +1,9 @@
 [
     {
-        title Truyện Yugi-Oh,
-        folder YugiOh,
-        upload_date 2025-10-20,
-        description Mô tả chuyện Yugi-Oh.
-    },
-    {
-        title Truyện B Thiên Hà,
-        folder TenTruyenB,
-        upload_date 2025-11-15,
-        description Truyện mới nhất về vũ trụ.
+        "title": "Truyện Yugi-Oh",
+        "folder": "YugiOh/Chap1", 
+        "upload_date": "2025-10-20",
+        "description": "Mô tả chuyện Yugi-Oh."
     }
+    // Nếu có truyện khác, thêm dấu phẩy ở đây
 ]
