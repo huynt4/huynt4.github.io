@@ -120,173 +120,171 @@
     </footer>
 
     <script>
-        // ==== DỮ LIỆU TRUYỆN: sửa ở đây nếu cần ====
-        const COMIC_DATA_JSON = [
-            {
-                "title": "Truyện Yugi-Oh",
-                "folder": "YugiOh/Chap1",
-                "upload_date": "2025-11-16",
-                "description": "Mô tả chuyện Yugi-Oh."
-            }
-            // Thêm truyện khác nếu cần
-        ];
+	/* === DỮ LIỆU TRUYỆN === */
+	const COMIC_DATA_JSON = [
+		{ "title": "Truyện Yugi-Oh", "folder": "YugiOh/Chap1", "upload_date": "2025-11-16", "description": "Mô tả chuyện Yugi-Oh." }
+	];
 
-        // ==== CẤU HÌNH ====
-        const MAX_PAGES = 2000;            // số trang tối đa script sẽ thử
-        const COMIC_ROOT_FOLDER = "Comic/"; // *IMPORTANT*: index.html nằm trong book/, Comic nằm cùng cấp => "Comic/"
+	/* === CẤU HÌNH === */
+	const MAX_PAGES = 2000;
+	const COMIC_ROOT_FOLDER = "Comic/"; // Comic nằm cùng cấp với index.html (index.html ở book/)
 
-        document.addEventListener('DOMContentLoaded', initializePage);
+	/* === Tạo base URL tuyệt đối từ vị trí index.html đang chạy === */
+	function getBasePath() {
+		// Ví dụ khi đang ở https://huynt4.github.io/book/index.html
+		// pathname = '/book/index.html' -> basePath = 'https://huynt4.github.io/book/'
+		const origin = window.location.origin; // 'https://huynt4.github.io'
+		const path = window.location.pathname; // '/book/index.html' hoặc '/book/' etc.
+		const folderPath = path.endsWith('/') ? path : path.substring(0, path.lastIndexOf('/') + 1);
+		return origin + folderPath;
+	}
 
-        function initializePage() {
-            const params = new URLSearchParams(window.location.search);
-            const folderName = params.get('folder');
+	const BASE_PATH = getBasePath();
+	// DEBUG: kiểm tra base
+	console.log('BASE_PATH =', BASE_PATH);
 
-            if (folderName) {
-                showViewerPage(decodeURIComponent(folderName));
-            } else {
-                showListPage();
-            }
-        }
+	document.addEventListener('DOMContentLoaded', initializePage);
 
-        // ===== LIST PAGE =====
-        function showListPage() {
-            document.getElementById('backLink').style.display = 'none';
-            document.getElementById('mainTitle').textContent = 'Truyện Tranh Online';
-            document.getElementById('subText').textContent = 'Kho lưu trữ truyện tranh cá nhân trên GitHub';
-            document.getElementById('comicViewer').style.display = 'none';
-            document.getElementById('comicList').style.display = 'block';
-            document.getElementById('controls').style.display = 'block';
+	function initializePage() {
+		const params = new URLSearchParams(window.location.search);
+		const folderName = params.get('folder');
+		if (folderName) showViewerPage(decodeURIComponent(folderName));
+		else showListPage();
+	}
 
-            const loadBtn = document.getElementById('loadComicsBtn');
-            // đảm bảo không add nhiều listener
-            loadBtn.removeEventListener('click', loadComics);
-            loadBtn.addEventListener('click', loadComics);
-            loadComics();
-        }
+	/* --- LIST --- */
+	function showListPage() {
+		document.getElementById('backLink').style.display = 'none';
+		document.getElementById('mainTitle').textContent = 'Truyện Tranh Online';
+		document.getElementById('subText').textContent = 'Kho lưu trữ truyện tranh cá nhân trên GitHub';
+		document.getElementById('comicViewer').style.display = 'none';
+		document.getElementById('comicList').style.display = 'block';
+		document.getElementById('controls').style.display = 'block';
 
-        async function loadComics() {
-            const comicsContainer = document.getElementById('comicsContainer');
-            const statusEl = document.getElementById('status');
-            statusEl.textContent = 'Đang tải danh sách...';
+		const loadBtn = document.getElementById('loadComicsBtn');
+		loadBtn.removeEventListener('click', loadComics);
+		loadBtn.addEventListener('click', loadComics);
+		loadComics();
+	}
 
-            try {
-                const comics = COMIC_DATA_JSON;
-                comicsContainer.innerHTML = '';
+	async function loadComics() {
+		const comicsContainer = document.getElementById('comicsContainer');
+		const statusEl = document.getElementById('status');
+		statusEl.textContent = 'Đang tải danh sách...';
 
-                if (!comics || comics.length === 0) {
-                    comicsContainer.innerHTML = '<p>Không tìm thấy truyện nào.</p>';
-                    statusEl.textContent = 'Đã tải: 0 truyện.';
-                    return;
-                }
+		try {
+			const comics = COMIC_DATA_JSON;
+			comicsContainer.innerHTML = '';
+			if (!comics || comics.length === 0) {
+				comicsContainer.innerHTML = '<p>Không tìm thấy truyện nào.</p>';
+				statusEl.textContent = 'Đã tải: 0 truyện.';
+				return;
+			}
+			comics.forEach(comic => {
+				const comicDiv = document.createElement('div');
+				comicDiv.classList.add('comic-item');
 
-                comics.forEach(comic => {
-                    const comicDiv = document.createElement('div');
-                    comicDiv.classList.add('comic-item');
+				const comicLink = document.createElement('a');
+				comicLink.href = `index.html?folder=${encodeURIComponent(comic.folder)}`;
+				comicLink.innerHTML = `
+					<h3>${comic.title}</h3>
+					<p><strong>Ngày tải lên:</strong> ${comic.upload_date}</p>
+					<p>${comic.description}</p>
+					<p class="view-link">Xem ngay &rarr;</p>
+				`;
+				comicDiv.appendChild(comicLink);
+				comicsContainer.appendChild(comicDiv);
+			});
 
-                    const comicLink = document.createElement('a');
-                    // encode param để an toàn nếu có ký tự đặc biệt
-                    comicLink.href = `index.html?folder=${encodeURIComponent(comic.folder)}`;
-                    comicLink.innerHTML = `
-                        <h3>${comic.title}</h3>
-                        <p><strong>Ngày tải lên:</strong> ${comic.upload_date}</p>
-                        <p>${comic.description}</p>
-                        <p class="view-link">Xem ngay &rarr;</p>
-                    `;
+			statusEl.textContent = `✅ Đã tải: ${comics.length} truyện.`;
+		} catch (err) {
+			console.error(err);
+			comicsContainer.innerHTML = '<p class="error">❌ Lỗi: Không thể tải danh sách truyện.</p>';
+			statusEl.textContent = 'Tải thất bại.';
+		}
+	}
 
-                    comicDiv.appendChild(comicLink);
-                    comicsContainer.appendChild(comicDiv);
-                });
+	/* --- VIEWER --- */
+	function showViewerPage(folderName) {
+		document.getElementById('controls').style.display = 'none';
+		document.getElementById('comicList').style.display = 'none';
+		document.getElementById('comicViewer').style.display = 'block';
+		document.getElementById('backLink').style.display = 'block';
 
-                statusEl.textContent = `✅ Đã tải: ${comics.length} truyện.`;
+		const currentComic = COMIC_DATA_JSON.find(c => c.folder === folderName);
+		document.getElementById('mainTitle').textContent = currentComic ? currentComic.title : folderName;
+		document.getElementById('subText').textContent = 'Cuộn xuống để đọc truyện';
 
-            } catch (error) {
-                console.error('Lỗi khi tải danh sách truyện:', error);
-                comicsContainer.innerHTML = '<p class="error">❌ Lỗi: Không thể tải danh sách truyện.</p>';
-                statusEl.textContent = 'Tải thất bại.';
-            }
-        }
+		loadComicPages(folderName);
+	}
 
-        // ===== VIEWER PAGE =====
-        function showViewerPage(folderName) {
-            document.getElementById('controls').style.display = 'none';
-            document.getElementById('comicList').style.display = 'none';
-            document.getElementById('comicViewer').style.display = 'block';
-            document.getElementById('backLink').style.display = 'block';
+	async function loadComicPages(folderName) {
+		const viewer = document.getElementById('viewerContainer');
+		viewer.innerHTML = '<p id="status-viewer">Đang tìm và tải các trang truyện...</p>';
+		const statusViewerEl = document.getElementById('status-viewer');
 
-            const currentComic = COMIC_DATA_JSON.find(c => c.folder === folderName);
-            document.getElementById('mainTitle').textContent = currentComic ? currentComic.title : folderName;
-            document.getElementById('subText').textContent = 'Cuộn xuống để đọc truyện';
+		let pagesLoaded = 0;
+		let consecutiveMisses = 0;
+		const maxConsecutiveMisses = 10;
 
-            loadComicPages(folderName);
-        }
+		for (let i = 0; i < MAX_PAGES; i++) {
+			const pageNumber = i.toString().padStart(5, '0');
 
-        async function loadComicPages(folderName) {
-            const viewer = document.getElementById('viewerContainer');
-            viewer.innerHTML = '<p id="status-viewer">Đang tìm và tải các trang truyện...</p>';
-            const statusViewerEl = document.getElementById('status-viewer');
+			// Build absolute URLs using BASE_PATH to avoid relative-path mistakes
+			const jpgUrl = encodeURI(`${BASE_PATH}${COMIC_ROOT_FOLDER}${folderName}/${pageNumber}.jpg`);
+			const pngUrl = encodeURI(`${BASE_PATH}${COMIC_ROOT_FOLDER}${folderName}/${pageNumber}.png`);
 
-            let pagesLoaded = 0;
-            let consecutiveMisses = 0;
-            const maxConsecutiveMisses = 10; // dừng sau 10 trang liền không tìm thấy
+			console.log('Trying:', jpgUrl);
 
-            for (let i = 0; i < MAX_PAGES; i++) {
-                const pageNumber = i.toString().padStart(5, '0');
-                const jpgUrl = encodeURI(`${COMIC_ROOT_FOLDER}${folderName}/${pageNumber}.jpg`);
-                const pngUrl = encodeURI(`${COMIC_ROOT_FOLDER}${folderName}/${pageNumber}.png`);
+			let found = false;
+			if (await tryLoadImage(jpgUrl, viewer)) {
+				found = true;
+			} else if (await tryLoadImage(pngUrl, viewer)) {
+				found = true;
+			}
 
-                // debug console
-                console.log('Thử:', jpgUrl);
+			if (found) {
+				pagesLoaded++;
+				consecutiveMisses = 0;
+				statusViewerEl.textContent = `Đã tải ${pagesLoaded} trang...`;
+			} else {
+				consecutiveMisses++;
+			}
 
-                let found = false;
-                if (await tryLoadImage(jpgUrl, viewer)) {
-                    found = true;
-                } else if (await tryLoadImage(pngUrl, viewer)) {
-                    found = true;
-                }
+			if (pagesLoaded > 0 && consecutiveMisses >= maxConsecutiveMisses) {
+				console.log(`Dừng sau ${consecutiveMisses} miss liên tiếp.`);
+				break;
+			}
+			if (i > 1000 && pagesLoaded === 0) break;
+		}
 
-                if (found) {
-                    pagesLoaded++;
-                    consecutiveMisses = 0;
-                    statusViewerEl.textContent = `Đã tải ${pagesLoaded} trang...`;
-                } else {
-                    consecutiveMisses++;
-                }
+		if (pagesLoaded === 0) {
+			viewer.innerHTML = `<p class="error">❌ Lỗi: Không tìm thấy trang nào. Kiểm tra:
+				<br>1) Thư mục <strong>book/Comic/${folderName}</strong> đã push chưa?
+				<br>2) Tên folder/file phân biệt chữ hoa/thường?
+				<br>3) File ảnh có tên dạng <strong>00000.jpg</strong>, <strong>00001.jpg</strong>, ...?</p>`;
+		} else {
+			statusViewerEl.textContent = `✅ Hoàn tất tải ${pagesLoaded} trang.`;
+		}
+	}
 
-                if (pagesLoaded > 0 && consecutiveMisses >= maxConsecutiveMisses) {
-                    console.log(`Dừng sau ${consecutiveMisses} miss liên tiếp.`);
-                    break;
-                }
+	function tryLoadImage(url, container) {
+		return new Promise(resolve => {
+			const img = document.createElement('img');
+			img.classList.add('comic-page');
+			img.loading = 'lazy';
+			img.alt = 'Trang truyện';
+			img.onload = () => {
+				container.appendChild(img);
+				resolve(true);
+			};
+			img.onerror = () => {
+				resolve(false);
+			};
+			img.src = url;
+		});
+	}
+	</script>
 
-                // an toàn: nếu vòng lặp quá lớn mà chưa tìm thấy gì, dừng sớm
-                if (i > 1000 && pagesLoaded === 0) break;
-            }
-
-            if (pagesLoaded === 0) {
-                viewer.innerHTML = `<p class="error">❌ Lỗi: Không tìm thấy trang nào. Kiểm tra: 
-                <br>1) Thư mục <strong>book/Comic/${folderName}</strong> đã được push lên GitHub chưa? 
-                <br>2) Tên folder/file phân biệt chữ hoa/thường (case-sensitive). 
-                <br>3) File ảnh có tên dạng <strong>00000.jpg</strong>, <strong>00001.jpg</strong>, ...?</p>`;
-            } else {
-                statusViewerEl.textContent = `✅ Hoàn tất tải ${pagesLoaded} trang.`;
-            }
-        }
-
-        function tryLoadImage(url, container) {
-            return new Promise(resolve => {
-                const img = document.createElement('img');
-                img.classList.add('comic-page');
-                img.loading = 'lazy';
-                img.alt = 'Trang truyện';
-                img.onload = () => {
-                    container.appendChild(img);
-                    resolve(true);
-                };
-                img.onerror = () => {
-                    resolve(false);
-                };
-                img.src = url;
-            });
-        }
-    </script>
 </body>
 </html>
