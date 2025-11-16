@@ -1,0 +1,14 @@
+[
+    {
+        title Truyện A Cuộc Phiêu Lưu,
+        folder TenTruyenA,
+        upload_date 2025-10-20,
+        description Đây là mô tả tóm tắt cho Truyện A.
+    },
+    {
+        title Truyện B Thiên Hà,
+        folder TenTruyenB,
+        upload_date 2025-11-15,
+        description Truyện mới nhất về vũ trụ.
+    }
+]
