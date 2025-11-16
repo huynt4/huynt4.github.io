@@ -200,6 +200,21 @@
 	 	 	 margin-top: 8px;
 	 	 }
 
+	 	 .progress-bar {
+	 	 	 width: 100%;
+	 	 	 height: 8px;
+	 	 	 background: #e5e7eb;
+	 	 	 border-radius: 4px;
+	 	 	 margin-top: 4px;
+	 	 	 overflow: hidden;
+	 	 }
+
+	 	 .progress-bar-inner {
+	 	 	 height: 100%;
+	 	 	 background: #22c55e;
+	 	 	 transition: width 0.15s ease;
+	 	 }
+
 	 	 @media (max-width: 640px) {
 	 	 	 .card {
 	 	 	 	 padding: 14px 14px;
@@ -266,11 +281,18 @@
 	 	 	 <div id="upload_status" class="status">
 	 	 	 	 Chưa có tệp nào được chọn.
 	 	 	 </div>
+	 	 	 
+	 	 	 <div id="progress_display" class="status" style="display: none; margin-top: 10px;">
+	 	 	 	 <div id="progress_text"></div>
+	 	 	 	 <div class="progress-bar">
+	 	 	 	 	 <div id="progress_bar_inner" class="progress-bar-inner" style="width: 0%;"></div>
+	 	 	 	 </div>
+	 	 	 </div>
 	 	 </section>
 
 	 	 	 	 <section class="card">
 	 	 	 <h2>3. Danh sách file trên Google Drive</h2>
-	 	 	 <small>Liệt kê 20 file gần đây nhất trong "Drive của tôi" (files.list)</small>
+	 	 	 <small>Liệt kê 20 file gần đây nhất trong "Drive của tôi" (files.list). Đã loại bỏ file trong Thùng rác.</small>
 
 	 	 	 <div class="buttons-row">
 	 	 	 	 <button id="list_button" class="btn btn-outline" disabled>
@@ -305,11 +327,9 @@
 
 	 <script>
 		// TODO: THAY BẰNG THÔNG TIN THẬT CỦA BẠN ---------------
-		// DÙNG CLIENT_ID VÀ API_KEY MẪU SẼ LÀM NÚT ĐĂNG NHẬP KHÔNG SÁNG!
 		const CLIENT_ID = "957298442128-v4c9rc83fud515f2is92p97lojjoiuja.apps.googleusercontent.com"; // OAuth 2.0 Client ID
 		const API_KEY = "AIzaSyCxJzJVa5OUlnPDKvyxiUqkIJGQ8-hxZtU"; // API key
 
-		// Scope: Sử dụng drive để có quyền tạo folder, upload file và đọc (drive.readonly chỉ cho phép đọc)
 		const SCOPES = "https://www.googleapis.com/auth/drive";	
 		const DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
 		// -------------------------------------------------------
@@ -317,8 +337,8 @@
 		let tokenClient;
 		let gapiInited = false;
 		let gisInited = false;
-		const folderIdCache = {}; // Cache lưu trữ ID của các folder đã tạo
-		let filesToUpload = []; // Danh sách file/folder đã chọn
+		const folderIdCache = {}; 
+		let filesToUpload = []; 
 
 		const authorizeButton = document.getElementById("authorize_button");
 		const signoutButton = document.getElementById("signout_button");
@@ -326,10 +346,14 @@
 
 		const uploadButton = document.getElementById("upload_button");
 		const uploadStatus = document.getElementById("upload_status");
-		
-		// CÁC BIẾN INPUT ĐÃ ĐƯỢC TÁCH RIÊNG
 		const fileInputFiles = document.getElementById("file_input_files");
 		const fileInputFolder = document.getElementById("file_input_folder");
+        
+		// BIẾN TIẾN TRÌNH MỚI
+		const progressDisplay = document.getElementById("progress_display");
+		const progressText = document.getElementById("progress_text");
+		const progressBarInner = document.getElementById("progress_bar_inner");
+
 
 		const listButton = document.getElementById("list_button");
 		const listStatus = document.getElementById("list_status");
@@ -362,7 +386,7 @@
 			 tokenClient = google.accounts.oauth2.initTokenClient({
 			client_id: CLIENT_ID,
 			scope: SCOPES,
-			callback: "", // sẽ gán sau
+			callback: "", 
 			 });
 			 gisInited = true;
 			
@@ -397,8 +421,11 @@
 				uploadButton.disabled = false;
 			} else {
 				uploadStatus.textContent = "Chưa có tệp nào được chọn.";
+				uploadStatus.classList.remove("error", "success");
 				uploadButton.disabled = true;
 			}
+			// Ẩn tiến trình khi không có file
+			progressDisplay.style.display = 'none';
 		}
 
 		// Khi bấm Đăng nhập
@@ -414,7 +441,7 @@
 				 authorizeButton.disabled = false;
 				 return;
 			}
-			// Đăng nhập xong
+			
 			authStatus.textContent = "Đã đăng nhập và cấp quyền cho Google Drive.";
 			authStatus.classList.remove("error");
 			authStatus.classList.add("success");
@@ -422,16 +449,13 @@
 			authorizeButton.textContent = "✅ Đã đăng nhập";
 			signoutButton.disabled = false;
 			listButton.disabled = false;
-			// Upload button được enable qua updateUploadInputStatus
 			updateUploadInputStatus(); 
 			 };
 
 			 const token = gapi.client.getToken();
 			 if (!token) {
-			// THAY prompt: "consent" thành "select_account" để luôn hiện màn hình chọn tài khoản
 			tokenClient.requestAccessToken({ prompt: "select_account" });
 			 } else {
-			// Đã có token → refresh
 			tokenClient.requestAccessToken({ prompt: "" });
 			 }
 		};
@@ -449,14 +473,15 @@
 			 signoutButton.disabled = true;
 			 uploadButton.disabled = true;
 			 listButton.disabled = true;
-			filesToUpload = []; // Reset danh sách file
+			filesToUpload = []; 
+			progressDisplay.style.display = 'none';
 
 			 authStatus.textContent = "Đã đăng xuất. Cần đăng nhập lại để sử dụng.";
 			 authStatus.classList.remove("success");
 		};
         
         // =========================================================
-        // === HÀM XỬ LÝ UPLOAD THƯ MỤC/NHIỀU FILE ===
+        // === HÀM XỬ LÝ UPLOAD THƯ MỤC/NHIỀU FILE (SỬA LỖI TIẾN TRÌNH) ===
         // =========================================================
         
 		// Hàm kiểm tra và tạo Folder trên Drive nếu cần
@@ -467,14 +492,11 @@
 			for (const segment of pathSegments) {
 				currentPath = (currentPath ? currentPath + '/' : '') + segment;
 
-				// Nếu đã có trong cache, sử dụng ID đã lưu
 				if (folderIdCache[currentPath]) {
 					currentParentId = folderIdCache[currentPath];
 					continue;
 				}
 
-				// Tìm kiếm Folder trong thư mục cha hiện tại
-				// Thay thế ' bằng \' để tránh lỗi trong chuỗi query
 				const query = `name = '${segment.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and '${currentParentId}' in parents`;
 				const searchRes = await gapi.client.drive.files.list({
 					q: query,
@@ -483,10 +505,8 @@
 				});
 
 				if (searchRes.result.files.length > 0) {
-					// Folder đã tồn tại
 					currentParentId = searchRes.result.files[0].id;
 				} else {
-					// Tạo Folder mới
 					const folderMetadata = {
 						'name': segment,
 						'mimeType': 'application/vnd.google-apps.folder',
@@ -500,13 +520,12 @@
 					currentParentId = createRes.result.id;
 				}
 
-				// Lưu vào cache
 				folderIdCache[currentPath] = currentParentId;
 			}
 			return currentParentId;
 		}
 
-		// Upload file
+		// Hàm upload file
 		uploadButton.onclick = async () => {
 			uploadStatus.classList.remove("error", "success");
 			const token = gapi.client.getToken();
@@ -516,7 +535,6 @@
 				return;
 			}
 
-			// LẤY DANH SÁCH FILES TỪ BIẾN GLOBAL ĐÃ ĐƯỢC CHỌN
 			const files = filesToUpload; 
 			if (files.length === 0) {
 				uploadStatus.textContent = "Vui lòng chọn file hoặc thư mục để upload.";
@@ -526,6 +544,7 @@
 
 			uploadButton.disabled = true;
 			listButton.disabled = true;
+			progressDisplay.style.display = 'block';
 			
 			let successCount = 0;
 			let errorCount = 0;
@@ -533,34 +552,34 @@
 			uploadStatus.textContent = `Đang chuẩn bị upload ${files.length} mục...`;
 
 			try {
-				// Reset cache folder cho mỗi lần upload mới
 				Object.keys(folderIdCache).forEach(k => delete folderIdCache[k]); 
 
 				for (let i = 0; i < files.length; i++) {
 					const file = files[i];
-					
-					uploadStatus.textContent = `Đang upload ${i + 1}/${files.length}: ${file.name}...`;
+					const totalSize = file.size;
+					const formattedTotalSize = formatBytes(totalSize);
+
+					progressText.textContent = `Đang upload ${i + 1}/${files.length}: ${file.name}... (0 B / ${formattedTotalSize})`;
+					progressBarInner.style.width = '0%';
+
 
 					// 1. Xử lý đường dẫn thư mục cha
-					let parentFolderId = 'root'; // Upload vào Drive của tôi
+					let parentFolderId = 'root'; 
 
-					// Chỉ chạy logic tạo folder nếu người dùng chọn upload thư mục (sẽ có webkitRelativePath)
 					if (file.webkitRelativePath) {
-						// Lấy các thành phần đường dẫn thư mục (loại bỏ tên file)
 						const parts = file.webkitRelativePath.split('/');
 						const pathSegments = parts.slice(0, -1); 
 
 						if (pathSegments.length > 0) {
-							// Tạo/tìm ID của thư mục cha
 							parentFolderId = await createFolderIfNeeded(pathSegments, 'root');
 						}
 					}
 
-					// 2. Upload file vào thư mục cha đã xác định/tạo
+					// 2. Upload file với tiến trình hiển thị
 					const metadata = {
 						name: file.name,
 						mimeType: file.type || "application/octet-stream",
-						parents: [parentFolderId], // Gán file vào thư mục cha
+						parents: [parentFolderId], 
 					};
 					
 					const form = new FormData();
@@ -570,27 +589,48 @@
 					);
 					form.append("file", file);
 
-					const res = await fetch(
-						"https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,iconLink,size,mimeType",
-						{
-							method: "POST",
-							headers: new Headers({
-								Authorization: "Bearer " + token.access_token,
-							}),
-							body: form,
+					const xhr = new XMLHttpRequest();
+					
+					// Hàm cập nhật tiến trình
+					xhr.upload.onprogress = (event) => {
+						if (event.lengthComputable) {
+							const uploaded = event.loaded;
+							const percent = Math.round((uploaded / totalSize) * 100);
+							progressText.textContent = `Đang upload ${i + 1}/${files.length}: ${file.name}... (${formatBytes(uploaded)} / ${formattedTotalSize})`;
+							progressBarInner.style.width = `${percent}%`;
 						}
+					};
+
+					xhr.open(
+						"POST",
+						"https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,iconLink,size,mimeType"
 					);
 
-					if (!res.ok) {
-						errorCount++;
-						console.error("Lỗi upload file:", file.name, await res.text());
-					} else {
-						successCount++;
-					}
+					xhr.setRequestHeader("Authorization", "Bearer " + token.access_token);
+
+					await new Promise((resolve, reject) => {
+						xhr.onload = () => {
+							if (xhr.status >= 200 && xhr.status < 300) {
+								successCount++;
+								resolve();
+							} else {
+								errorCount++;
+								console.error("Lỗi upload file:", file.name, xhr.responseText);
+								reject(new Error(`Lỗi upload: ${xhr.status}`));
+							}
+						};
+						xhr.onerror = () => {
+							errorCount++;
+							console.error("Lỗi mạng khi upload:", file.name);
+							reject(new Error("Lỗi mạng/kết nối"));
+						};
+						xhr.send(form);
+					});
 				}
 				
 				// Cập nhật trạng thái cuối cùng
 				const totalUploaded = successCount + errorCount;
+				progressDisplay.style.display = 'none';
 				if (errorCount === 0) {
 					uploadStatus.textContent = `✅ Upload thành công ${successCount}/${totalUploaded} mục!`;
 					uploadStatus.classList.add("success");
@@ -609,6 +649,7 @@
 				
 			} catch (error) {
 				console.error(error);
+				progressDisplay.style.display = 'none';
 				uploadStatus.textContent = "Lỗi upload tổng quát: " + error.message;
 				uploadStatus.classList.add("error");
 				uploadStatus.classList.remove("success");
@@ -619,7 +660,7 @@
 		};
         
         // =========================================================
-        // === HÀM LIỆT KÊ FILE ===
+        // === HÀM LIỆT KÊ FILE (ĐÃ SỬA: Loại bỏ file trong Thùng rác) ===
         // =========================================================
 
 		// List files khi bấm nút
@@ -645,8 +686,8 @@
 				 pageSize: 20,
 				 fields: "files(id,name,mimeType,modifiedTime,iconLink,webViewLink,size)",
 				 orderBy: "modifiedTime desc",
-				 // Lọc: Chỉ lấy các mục nằm trực tiếp trong thư mục gốc ('root') của Drive của tôi
-				 q: "'root' in parents", 
+				 // SỬA ĐỔI: Chỉ lấy các mục nằm trực tiếp trong thư mục gốc VÀ KHÔNG BỊ XOÁ (trashed = false)
+				 q: "'root' in parents and trashed = false", 
 			});
 
 			const files = response.result.files || [];
@@ -679,7 +720,7 @@
 
 				 const sizeTd = document.createElement("td");
 				 sizeTd.textContent = isFolder	
-				? "-" // Thư mục không hiển thị kích thước
+				? "-" 
 				: (file.size ? formatBytes(parseInt(file.size, 10)) : "-");
 
 				 const linkTd = document.createElement("td");
