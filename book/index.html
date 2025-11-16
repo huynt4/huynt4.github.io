@@ -87,24 +87,7 @@
             margin-top: 30px;
             border-top: 1px solid #ddd;
         }
-        .error { color: #c0392b; }
-        /* Debug viewer styles */
-        .url-row {
-            padding: 8px;
-            background: #fff;
-            margin-bottom: 8px;
-            border: 1px solid #eee;
-            border-radius: 6px;
-            text-align: left;
-        }
-        .url-row .small { font-size: 0.9em; color: #555; }
-        .ok { color: green; font-weight: bold; }
-        .err { color: #c0392b; font-weight: bold; }
-        a.debug-link { margin-right: 8px; text-decoration: none; color: #2b78c8; }
-        .debug-controls { margin-bottom: 12px; }
-        .btn { display:inline-block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#fff;background:#2b78c8;margin-right:8px; }
-        .btn.green { background:#2ecc71; }
-        pre.console { background:#111;color:#fff;padding:8px;border-radius:6px;overflow:auto;max-height:200px;}
+        .error { color: #c0392b; text-align:center; }
     </style>
 </head>
 <body>
@@ -128,6 +111,7 @@
         </section>
         
         <section id="comicViewer" style="display:none;">
+            <div id="viewerContainer"></div>
         </section>
     </main>
 
@@ -136,7 +120,7 @@
     </footer>
 
     <script>
-        // ================== CONFIG / DATA ==================
+        // ====== DỮ LIỆU TRUYỆN (chỉnh nếu cần) ======
         const COMIC_DATA_JSON = [
             {
                 "title": "Truyện Yugi-Oh",
@@ -144,24 +128,22 @@
                 "upload_date": "2025-11-16",
                 "description": "Mô tả chuyện Yugi-Oh."
             }
-            // Thêm truyện khác nếu cần
+            // thêm truyện khác nếu cần
         ];
 
+        // ====== CẤU HÌNH ======
         const MAX_PAGES = 2000;
         const COMIC_ROOT_FOLDER = "Comic/"; // index.html nằm trong book/, Comic nằm cùng cấp
 
-        // ================== BASE PATH (absolute) ==================
+        // Tạo base path tuyệt đối từ vị trí index.html đang chạy (ví dụ https://huynt4.github.io/book/)
         function getBasePath() {
-            // origin + folder of current path (ensures we point to book/)
-            const origin = window.location.origin; // e.g. https://huynt4.github.io
-            const path = window.location.pathname; // e.g. /book/ or /book/index.html
+            const origin = window.location.origin;
+            const path = window.location.pathname;
             const folderPath = path.endsWith('/') ? path : path.substring(0, path.lastIndexOf('/') + 1);
             return origin + folderPath;
         }
         const BASE_PATH = getBasePath();
-        logToConsole('BASE_PATH = ' + BASE_PATH);
 
-        // ================== Page init ==================
         document.addEventListener('DOMContentLoaded', initializePage);
 
         function initializePage() {
@@ -174,7 +156,7 @@
             }
         }
 
-        // ================== LIST PAGE ==================
+        // ====== LIST PAGE ======
         function showListPage() {
             document.getElementById('backLink').style.display = 'none';
             document.getElementById('mainTitle').textContent = 'Truyện Tranh Online';
@@ -229,7 +211,7 @@
             }
         }
 
-        // ================== VIEWER (DEBUG STYLE) ==================
+        // ====== VIEWER PAGE (clean: chỉ hiển thị ảnh load được) ======
         function showViewerPage(folderName) {
             document.getElementById('controls').style.display = 'none';
             document.getElementById('comicList').style.display = 'none';
@@ -238,125 +220,87 @@
 
             const currentComic = COMIC_DATA_JSON.find(c => c.folder === folderName);
             document.getElementById('mainTitle').textContent = currentComic ? currentComic.title : folderName;
-            document.getElementById('subText').textContent = 'Chế độ Debug: xem các URL ảnh được thử, mở trực tiếp và xem ảnh thu nhỏ nếu load được';
+            document.getElementById('subText').textContent = 'Cuộn xuống để đọc truyện';
 
-            // show/hide console button
-            const showConsoleBtn = document.getElementById('showConsoleBtn');
-            const consoleEl = document.getElementById('consoleLog');
-
-            // load in debug mode
-            loadComicPagesDebug(folderName);
+            loadComicPagesClean(folderName);
         }
 
-        async function loadComicPagesDebug(folderName) {
-			const viewer = document.getElementById('viewerContainer');
-			viewer.innerHTML = '<p id="status-viewer">Đang tải trang truyện...</p>';
-			const statusViewerEl = document.getElementById('status-viewer');
+        async function loadComicPagesClean(folderName) {
+            const viewer = document.getElementById('viewerContainer');
+            viewer.innerHTML = '<p id="status-viewer">Đang tìm và tải các trang truyện...</p>';
+            const statusViewerEl = document.getElementById('status-viewer');
 
-			let pagesLoaded = 0;
-			let consecutiveMisses = 0;
-			const maxConsecutiveMisses = 10;
+            let pagesLoaded = 0;
+            let consecutiveMisses = 0;
+            const maxConsecutiveMisses = 10;
 
-			for (let i = 0; i < MAX_PAGES; i++) {
-				const pageNumber = i.toString().padStart(5, '0');
+            for (let i = 0; i < MAX_PAGES; i++) {
+                const pageNumber = i.toString().padStart(5, '0');
 
-				const jpgUrl = encodeURI(`${BASE_PATH}${COMIC_ROOT_FOLDER}${folderName}/${pageNumber}.jpg`);
-				const pngUrl = encodeURI(`${BASE_PATH}${COMIC_ROOT_FOLDER}${folderName}/${pageNumber}.png`);
+                // build absolute URLs to avoid relative path issues
+                const jpgUrl = encodeURI(`${BASE_PATH}${COMIC_ROOT_FOLDER}${folderName}/${pageNumber}.jpg`);
+                const pngUrl = encodeURI(`${BASE_PATH}${COMIC_ROOT_FOLDER}${folderName}/${pageNumber}.png`);
 
-				// tạo link thumbnail ảnh
-				let found = false;
+                // try jpg first then png; only append images that successfully load
+                let found = false;
+                if (await tryLoadImageIntoViewer(jpgUrl, viewer)) {
+                    found = true;
+                } else if (await tryLoadImageIntoViewer(pngUrl, viewer)) {
+                    found = true;
+                }
 
-				if (await tryLoadImageIntoViewer(jpgUrl, viewer)) {
-					found = true;
-				} else if (await tryLoadImageIntoViewer(pngUrl, viewer)) {
-					found = true;
-				}
+                if (found) {
+                    pagesLoaded++;
+                    consecutiveMisses = 0;
+                    statusViewerEl.textContent = `Đã tải ${pagesLoaded} trang...`;
+                } else {
+                    consecutiveMisses++;
+                }
 
-				if (found) {
-					pagesLoaded++;
-					consecutiveMisses = 0;
-					statusViewerEl.textContent = `Đã tải ${pagesLoaded} trang...`;
-				} else {
-					consecutiveMisses++;
-				}
+                // stop after enough consecutive failures once we have started to find pages
+                if (pagesLoaded > 0 && consecutiveMisses >= maxConsecutiveMisses) {
+                    break;
+                }
 
-				if (pagesLoaded > 0 && consecutiveMisses >= maxConsecutiveMisses) {
-					break;
-				}
-			}
+                // safety: prevent endless loop if nothing found
+                if (i > 1000 && pagesLoaded === 0) break;
+            }
 
-			if (pagesLoaded === 0) {
-				viewer.innerHTML = `<p class="error">❌ Không tìm thấy trang truyện nào.</p>`;
-			} else {
-				statusViewerEl.textContent = `Đã tải xong ${pagesLoaded} trang.`;
-			}
-		}
-		
-		function tryLoadImageIntoViewer(url, viewer) {
-			return new Promise(resolve => {
-				const img = new Image();
-				img.className = "comic-page";
-
-				img.onload = () => {
-					viewer.appendChild(img);
-					resolve(true);
-				};
-				img.onerror = () => resolve(false);
-
-				img.src = url;
-			});
-		}
-	
-
-
-        // try loading image but only return boolean (don't append here)
-        function tryLoadImageDebug(url) {
-            return new Promise(resolve => {
-                const img = new Image();
-                let done = false;
-                img.onload = () => {
-                    if (!done) { done = true; resolve(true); }
-                };
-                img.onerror = () => {
-                    if (!done) { done = true; resolve(false); }
-                };
-                // set timeout fallback (in case)
-                setTimeout(() => { if (!done) { done = true; resolve(false); } }, 8000);
-                img.src = url;
-            });
-        }
-
-        // ================== small helpers ==================
-        function tryLoadImage(url, container) {
-            return new Promise(resolve => {
-                const img = document.createElement('img');
-                img.classList.add('comic-page');
-                img.loading = 'lazy';
-                img.alt = 'Trang truyện';
-                img.onload = () => {
-                    container.appendChild(img);
-                    resolve(true);
-                };
-                img.onerror = () => resolve(false);
-                img.src = url;
-            });
-        }
-
-        function logToConsole(msg) {
-            console.log(msg);
-            const el = document.getElementById('consoleLog');
-            if (el) {
-                el.textContent += (new Date()).toLocaleTimeString() + '  ' + msg + '\n';
+            if (pagesLoaded === 0) {
+                viewer.innerHTML = `<p class="error">❌ Không tìm thấy trang truyện nào. Kiểm tra: 
+                    <br>1) Thư mục <strong>book/Comic/${folderName}</strong> đã push lên GitHub chưa?
+                    <br>2) Tên folder/file phân biệt chữ hoa/thường?
+                    <br>3) File ảnh có tên dạng <strong>00000.jpg</strong>, <strong>00001.jpg</strong>, ...?</p>`;
+            } else {
+                statusViewerEl.textContent = `✅ Hoàn tất tải ${pagesLoaded} trang.`;
             }
         }
 
-        // ================== Back link behavior: go to list without reload params ==================
+        // try loading image and append to viewer only when load succeeds
+        function tryLoadImageIntoViewer(url, viewer) {
+            return new Promise(resolve => {
+                const img = new Image();
+                img.className = 'comic-page';
+                img.onload = () => {
+                    viewer.appendChild(img);
+                    resolve(true);
+                };
+                img.onerror = () => resolve(false);
+                // set src last
+                img.src = url;
+                // fallback timeout (in case)
+                setTimeout(() => {
+                    // if image hasn't loaded by now and not resolved, assume failure (but onerror likely already fired)
+                    // we don't cancel here; this timeout is just safety
+                }, 8000);
+            });
+        }
+
+        // back link behavior - navigate to list without query
         document.getElementById('backLink').addEventListener('click', function(e) {
-            // navigate to index without query params
             e.preventDefault();
             window.location.href = 'index.html';
         });
-
     </script>
 </body>
 </html>
