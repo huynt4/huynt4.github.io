@@ -1,103 +1,95 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>Upload & Liệt kê file Google Drive</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <title>Upload & Liệt kê file Google Drive</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header>
-    <h1>Upload & Liệt kê file Google Drive</h1>
-    <p>HTML + CSS + JavaScript · Chạy trực tiếp trên GitHub Pages</p>
-  </header>
+  <header>
+    <h1>Upload & Liệt kê file Google Drive</h1>
+    <p>HTML + CSS + JavaScript · Chạy trực tiếp trên GitHub Pages</p>
+  </header>
 
-  <main>
-    <!-- ===== Đăng nhập Google ===== -->
-    <section class="card">
-      <h2>1. Đăng nhập Google</h2>
-      <small>Dùng OAuth 2.0 với Google Identity Services</small>
-	  
-    <!-- --- Mật khẩu bảo mật (client-side) --- -->
-	<div class="file-section" id="pw_section">
-	  <input type="password" id="secure_password" placeholder="Nhập mật khẩu..." />
-	  <button id="check_password_button" class="btn btn-outline">Xác nhận</button>
-	  <button id="clear_password_button" class="btn btn-outline">Xóa mật khẩu</button>
-	  <div id="password_status" class="status"></div>
+  <main>
+        <section class="card">
+      <h2>1. Đăng nhập Google</h2>
+      <small>Dùng OAuth 2.0 với Google Identity Services</small>
+	  
+    <div class="file-section" id="pw_section">
+	  <input type="password" id="secure_password" placeholder="Nhập mật khẩu..." />
+	  <button id="check_password_button" class="btn btn-outline">Xác nhận</button>
+	  <button id="clear_password_button" class="btn btn-outline">Xóa mật khẩu</button>
+	  <div id="password_status" class="status"></div>
 	</div>
 
-      <div class="buttons-row">
-        <button id="authorize_button" class="btn btn-primary" style="display:none;" disabled>🔐 Đăng nhập Google</button>
+      <div class="buttons-row">
+        <button id="authorize_button" class="btn btn-primary" style="display:none;" disabled>🔐 Đăng nhập Google</button>
 		<button id="login_api_button" class="btn btn-outline" style="display:none;" disabled>🔑 Đăng nhập = API</button>
 		<button id="signout_button" class="btn btn-outline" disabled>🚪 Đăng xuất</button>
-      </div>
+      </div>
 
-      <div id="auth_status" class="status">
-        Trạng thái: <strong>Chưa sẵn sàng</strong> (đang tải thư viện Google...)
-      </div>
-    </section>
+      <div id="auth_status" class="status">
+        Trạng thái: <strong>Chưa sẵn sàng</strong> (đang tải thư viện Google...)
+      </div>
+    </section>
 
-    <!-- ===== Upload file ===== -->
-    <section class="card">
-      <h2>2. Upload file lên Google Drive</h2>
-      <small>Scope: <code>https://www.googleapis.com/auth/drive.file</code> (chỉ file tạo bởi app)</small>
+        <section class="card">
+      <h2>2. Upload file lên Google Drive</h2>
+      <small>Scope: <code>https://www.googleapis.com/auth/drive.file</code> (chỉ file tạo bởi app)</small>
 
-      <div class="file-section">
-        <input type="file" id="file_input">
-        <button id="upload_button" class="btn btn-outline" disabled>
-          ⬆️ Upload lên Drive
-        </button>
-      </div>
+      <div class="file-section">
+        <input type="file" id="file_input">
+        <button id="upload_button" class="btn btn-outline" disabled>
+          ⬆️ Upload lên Drive
+        </button>
+      </div>
 
-      <div id="upload_status" class="status">
-		<div id="upload_progress" class="status text-muted">0 B / 0 B</div>
-        Chưa có thao tác upload nào.
-      </div>
-    </section>
+	  <div id="upload_progress" class="status text-muted"></div>       <div id="upload_status" class="status">
+        Chưa có thao tác upload nào.
+      </div>
+    </section>
 
-    <!-- ===== Danh sách file ===== -->
-    <section class="card">
-      <h2>3. Danh sách file trên Google Drive</h2>
-      <small>Liệt kê 20 file gần đây nhất (files.list)</small>
+        <section class="card">
+      <h2>3. Danh sách file trên Google Drive</h2>
+      <small>Liệt kê 20 file gần đây nhất (files.list)</small>
 
-      <div class="buttons-row">
-        <button id="list_button" class="btn btn-outline" disabled>
-          🔄 Tải danh sách file
-        </button>
-        <span class="text-muted">* Chỉ xem được file mà app có quyền truy cập.</span>
-      </div>
+      <div class="buttons-row">
+        <button id="list_button" class="btn btn-outline" disabled>
+          🔄 Tải danh sách file
+        </button>
+        <span class="text-muted">* Chỉ xem được file mà app có quyền truy cập.</span>
+      </div>
 
-      <div id="list_status" class="status">
-        Chưa tải danh sách file.
-      </div>
+      <div id="list_status" class="status">
+        Chưa tải danh sách file.
+      </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Tên file</th>
-            <th>Loại</th>
-            <th>Cập nhật</th>
-            <th>Kích thước</th>
-            <th>Xem</th>
-          </tr>
-        </thead>
-        <tbody id="files_tbody">
-          <!-- Hàng sẽ được thêm bằng JavaScript -->
-        </tbody>
-      </table>
-    </section>
+      <table>
+        <thead>
+          <tr>
+            <th>Tên file</th>
+            <th>Loại</th>
+            <th>Cập nhật</th>
+            <th>Kích thước</th>
+            <th>Xem</th>
+          </tr>
+        </thead>
+        <tbody id="files_tbody">
+                  </tbody>
+      </table>
+    </section>
 
-    <footer>
-      Code demo · Bạn cần thay <strong>CLIENT_ID</strong> và <strong>API_KEY</strong> trong file.
-    </footer>
-  </main>
+    <footer>
+      Code demo · Bạn cần thay <strong>CLIENT_ID</strong> và <strong>API_KEY</strong> trong file.
+    </footer>
+  </main>
 
-  <!-- ===== JavaScript chính ===== -->
-  <script src="app.js"></script>
-  
-  <!-- ===== JS SDK của Google ===== -->
-  <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
-  <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
-  
+    <script src="app.js"></script>
+  
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+  <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+  
 </body>
 </html>
