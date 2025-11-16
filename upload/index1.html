@@ -305,7 +305,7 @@
 		const API_KEY = "AIzaSyCxJzJVa5OUlnPDKvyxiUqkIJGQ8-hxZtU"; // API key
 
 		// Scope được đặt lại thành drive.file để chỉ thấy file/folder do app tạo
-		const SCOPES = "https://www.googleapis.com/auth/drive.file"; 
+		const SCOPES = "https://www.googleapis.com/auth/drive.readonly"; 
 		const DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
 		// -------------------------------------------------------
 
@@ -509,6 +509,7 @@
 			  pageSize: 20,
 			  fields: "files(id,name,mimeType,modifiedTime,iconLink,webViewLink,size)",
 			  orderBy: "modifiedTime desc",
+			  q: "trashed=false"
 			  // Không cần tham số 'q' khi dùng drive.file, API sẽ tự động lọc theo file/folder do app tạo
 			});
 
