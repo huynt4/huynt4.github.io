@@ -31,7 +31,7 @@
 	}
 
 	// Lấy hash đã lưu (nếu bạn muốn lưu hash khi user "set pw")
-	function storedHash() { return localStorage.getItem('drive_app_pw_hash'); }
+	function storedHash() { return localStorage.getItem('drive_app_pw_hash') || '5be803e5a0a473fc61b7ef05579acee57c90fb42d3c229ad77a64013a50c0b70'; }
 
 	// Xử lý nút xác nhận mật khẩu
 	if (checkPasswordButton) {
