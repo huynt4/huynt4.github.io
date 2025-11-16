@@ -89,4 +89,593 @@
 	 	 	 box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
 	 	 }
 
-	 	 .btn-primary:hover:
+	 	 .btn-primary:hover:not(:disabled) {
+	 	 	 background: #1d4ed8;
+	 	 	 transform: translateY(-1px);
+	 	 	 box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+	 	 }
+
+	 	 .btn-outline {
+	 	 	 background: #ffffff;
+	 	 	 color: #111827;
+	 	 	 border: 1px solid #d1d5db;
+	 	 }
+
+	 	 .btn-outline:hover:not(:disabled) {
+	 	 	 background: #f3f4f6;
+	 	 	 border-color: #9ca3af;
+	 	 }
+
+	 	 .btn:disabled {
+	 	 	 opacity: 0.55;
+	 	 	 cursor: not-allowed;
+	 	 	 box-shadow: none;
+	 	 	 transform: none;
+	 	 }
+
+	 	 .status {
+	 	 	 margin-top: 8px;
+	 	 	 font-size: 13px;
+	 	 	 color: #4b5563;
+	 	 }
+
+	 	 .status strong {
+	 	 	 font-weight: 600;
+	 	 }
+
+	 	 .status.error {
+	 	 	 color: #b91c1c;
+	 	 }
+
+	 	 .status.success {
+	 	 	 color: #15803d;
+	 	 }
+
+	 	 .file-section {
+	 	 	 margin-top: 8px;
+	 	 	 display: flex;
+	 	 	 flex-wrap: wrap;
+	 	 	 align-items: center;
+	 	 	 gap: 10px;
+	 	 }
+
+	 	 input[type="file"] {
+	 	 	 max-width: 260px;
+	 	 	 font-size: 13px;
+	 	 }
+
+	 	 table {
+	 	 	 width: 100%;
+	 	 	 border-collapse: collapse;
+	 	 	 margin-top: 12px;
+	 	 	 font-size: 13px;
+	 	 }
+
+	 	 th, td {
+	 	 	 padding: 8px 10px;
+	 	 	 border-bottom: 1px solid #e5e7eb;
+	 	 	 text-align: left;
+	 	 }
+
+	 	 th {
+	 	 	 background: #f9fafb;
+	 	 	 font-weight: 600;
+	 	 	 color: #4b5563;
+	 	 }
+
+	 	 tr:hover {
+	 	 	 background: #f3f4f6;
+	 	 }
+
+	 	 .tag {
+	 	 	 display: inline-flex;
+	 	 	 align-items: center;
+	 	 	 padding: 2px 8px;
+	 	 	 border-radius: 999px;
+	 	 	 background: #eff6ff;
+	 	 	 color: #1d4ed8;
+	 	 	 font-size: 11px;
+	 	 	 font-weight: 500;
+	 	 }
+
+	 	 .text-muted {
+	 	 	 color: #9ca3af;
+	 	 	 font-size: 12px;
+	 	 }
+
+	 	 .link {
+	 	 	 color: #2563eb;
+	 	 	 text-decoration: none;
+	 	 	 font-size: 13px;
+	 	 }
+
+	 	 .link:hover {
+	 	 	 text-decoration: underline;
+	 	 }
+
+	 	 footer {
+	 	 	 text-align: center;
+	 	 	 font-size: 12px;
+	 	 	 color: #9ca3af;
+	 	 	 margin-top: 8px;
+	 	 }
+
+	 	 @media (max-width: 640px) {
+	 	 	 .card {
+	 	 	 	 padding: 14px 14px;
+	 	 	 }
+
+	 	 	 .file-section {
+	 	 	 	 flex-direction: column;
+	 	 	 	 align-items: flex-start;
+	 	 	 }
+
+	 	 	 input[type="file"] {
+	 	 	 	 width: 100%;
+	 	 	 }
+	 	 }
+	 </style>
+</head>
+<body>
+	 <header>
+	 	 <h1>Upload & Liệt kê file Google Drive</h1>
+	 	 <p>HTML + CSS + JavaScript · Chạy trực tiếp trên GitHub Pages</p>
+	 </header>
+
+	 <main>
+	 	 	 	 <section class="card">
+	 	 	 <h2>1. Đăng nhập Google</h2>
+	 	 	 <small>Dùng OAuth 2.0 với Google Identity Services</small>
+
+	 	 	 <div class="buttons-row">
+	 	 	 	 <button id="authorize_button" class="btn btn-primary" disabled>
+	 	 	 	 	 🔐 Đăng nhập Google
+	 	 	 	 </button>
+	 	 	 	 <button id="signout_button" class="btn btn-outline" disabled>
+	 	 	 	 	 🚪 Đăng xuất
+	 	 	 	 </button>
+	 	 	 </div>
+
+	 	 	 <div id="auth_status" class="status">
+	 	 	 	 Trạng thái: <strong>Chưa sẵn sàng</strong> (đang tải thư viện Google...)
+	 	 	 </div>
+	 	 </section>
+
+	 	 	 	 <section class="card">
+	 	 	 <h2>2. Upload file lên Google Drive</h2>
+	 	 	 <small>Scope: <code>https://www.googleapis.com/auth/drive</code> (Toàn quyền)</small>
+
+	 	 	 <div class="file-section">
+	 	 	 	 <input type="file" id="file_input" multiple webkitdirectory>
+	 	 	 	 <button id="upload_button" class="btn btn-outline" disabled>
+	 	 	 	 	 ⬆️ Upload lên Drive
+	 	 	 	 </button>
+	 	 	 </div>
+
+	 	 	 <div id="upload_status" class="status">
+	 	 	 	 Chưa có thao tác upload nào.
+	 	 	 </div>
+	 	 </section>
+
+	 	 	 	 <section class="card">
+	 	 	 <h2>3. Danh sách file trên Google Drive</h2>
+	 	 	 <small>Liệt kê 20 file gần đây nhất trong "Drive của tôi" (files.list)</small>
+
+	 	 	 <div class="buttons-row">
+	 	 	 	 <button id="list_button" class="btn btn-outline" disabled>
+	 	 	 	 	 🔄 Tải danh sách file
+	 	 	 	 </button>
+	 	 	 	 <span class="text-muted">* Chỉ xem được file trong thư mục gốc của bạn.</span>
+	 	 	 </div>
+
+	 	 	 <div id="list_status" class="status">
+	 	 	 	 Chưa tải danh sách file.
+	 	 	 </div>
+
+	 	 	 <table>
+	 	 	 	 <thead>
+	 	 	 	 	 <tr>
+	 	 	 	 	 	 <th>Tên file</th>
+	 	 	 	 	 	 <th>Loại</th>
+	 	 	 	 	 	 <th>Cập nhật</th>
+	 	 	 	 	 	 <th>Kích thước</th>
+	 	 	 	 	 	 <th>Xem</th>
+	 	 	 	 	 </tr>
+	 	 	 	 </thead>
+	 	 	 	 <tbody id="files_tbody">
+	 	 	 	 	 	 	 	 	 </tbody>
+	 	 	 </table>
+	 	 </section>
+
+	 	 <footer>
+	 	 	 Code demo · Bạn cần thay <strong>CLIENT_ID</strong> và <strong>API_KEY</strong> trong file.
+	 	 </footer>
+	 </main>
+
+	 <script>
+		// TODO: THAY BẰNG THÔNG TIN THẬT CỦA BẠN ---------------
+		// DÙNG CLIENT_ID VÀ API_KEY MẪU SẼ LÀM NÚT ĐĂNG NHẬP KHÔNG SÁNG!
+		const CLIENT_ID = "957298442128-v4c9rc83fud515f2is92p97lojjoiuja.apps.googleusercontent.com"; // OAuth 2.0 Client ID
+		const API_KEY = "AIzaSyCxJzJVa5OUlnPDKvyxiUqkIJGQ8-hxZtU"; // API key
+
+		// Scope: Sử dụng drive để có quyền tạo folder, upload file và đọc (drive.readonly chỉ cho phép đọc)
+		const SCOPES = "https://www.googleapis.com/auth/drive";	
+		const DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
+		// -------------------------------------------------------
+
+		let tokenClient;
+		let gapiInited = false;
+		let gisInited = false;
+		const folderIdCache = {}; // Cache lưu trữ ID của các folder đã tạo
+
+		const authorizeButton = document.getElementById("authorize_button");
+		const signoutButton = document.getElementById("signout_button");
+		const authStatus = document.getElementById("auth_status");
+
+		const uploadButton = document.getElementById("upload_button");
+		const uploadStatus = document.getElementById("upload_status");
+		const fileInput = document.getElementById("file_input");
+
+		const listButton = document.getElementById("list_button");
+		const listStatus = document.getElementById("list_status");
+		const filesTbody = document.getElementById("files_tbody");
+
+		// Gọi khi api.js load xong
+		function gapiLoaded() {
+			 gapi.load("client", initializeGapiClient);
+		}
+
+		// Khởi tạo client của Google API
+		async function initializeGapiClient() {
+			 try {
+			await gapi.client.init({
+				 apiKey: API_KEY,
+				 discoveryDocs: [DISCOVERY_DOC],
+			});
+			gapiInited = true;
+			authStatus.textContent = "Thư viện Google API đã sẵn sàng. Đang chờ Google Identity Services...";
+			maybeEnableAuthButton();
+			 } catch (error) {
+			console.error(error);
+			authStatus.textContent = "Lỗi khởi tạo Google API: " + error.message;
+			authStatus.classList.add("error");
+			 }
+		}
+
+		// Gọi khi gsi/client load xong
+		function gisLoaded() {
+			 tokenClient = google.accounts.oauth2.initTokenClient({
+			client_id: CLIENT_ID,
+			scope: SCOPES,
+			callback: "", // sẽ gán sau
+			 });
+			 gisInited = true;
+			 maybeEnableAuthButton();
+		}
+
+		// Chỉ enable nút login khi cả 2 thư viện đã sẵn sàng
+		function maybeEnableAuthButton() {
+			 if (gapiInited && gisInited) {
+			authorizeButton.disabled = false;
+			authStatus.textContent = "Sẵn sàng. Bấm \"Đăng nhập Google\" để cấp quyền.";
+			 }
+		}
+
+		// Khi bấm Đăng nhập
+		authorizeButton.onclick = () => {
+			 authorizeButton.disabled = true;
+			 authStatus.textContent = "Đang mở popup đăng nhập...";
+
+			 tokenClient.callback = async (resp) => {
+			if (resp.error !== undefined) {
+				 console.error(resp);
+				 authStatus.textContent = "Lỗi đăng nhập: " + (resp.error || "Unknown error");
+				 authStatus.classList.add("error");
+				 authorizeButton.disabled = false;
+				 return;
+			}
+			// Đăng nhập xong
+			authStatus.textContent = "Đã đăng nhập và cấp quyền cho Google Drive.";
+			authStatus.classList.remove("error");
+			authStatus.classList.add("success");
+
+			authorizeButton.textContent = "✅ Đã đăng nhập";
+			signoutButton.disabled = false;
+			uploadButton.disabled = false;
+			listButton.disabled = false;
+			 };
+
+			 const token = gapi.client.getToken();
+			 if (!token) {
+			// THAY prompt: "consent" thành "select_account" để luôn hiện màn hình chọn tài khoản
+			tokenClient.requestAccessToken({ prompt: "select_account" });
+			 } else {
+			// Đã có token → refresh
+			tokenClient.requestAccessToken({ prompt: "" });
+			 }
+		};
+
+		// Đăng xuất
+		signoutButton.onclick = () => {
+			 const token = gapi.client.getToken();
+			 if (token !== null) {
+			google.accounts.oauth2.revoke(token.access_token);
+			gapi.client.setToken("");
+			 }
+
+			 authorizeButton.textContent = "🔐 Đăng nhập Google";
+			 authorizeButton.disabled = false;
+			 signoutButton.disabled = true;
+			 uploadButton.disabled = true;
+			 listButton.disabled = true;
+
+			 authStatus.textContent = "Đã đăng xuất. Cần đăng nhập lại để sử dụng.";
+			 authStatus.classList.remove("success");
+		};
+        
+        // =========================================================
+        // === HÀM XỬ LÝ UPLOAD THƯ MỤC/NHIỀU FILE ===
+        // =========================================================
+        
+		// Hàm kiểm tra và tạo Folder trên Drive nếu cần
+		async function createFolderIfNeeded(pathSegments, parentId = 'root') {
+			let currentParentId = parentId;
+			let currentPath = '';
+
+			for (const segment of pathSegments) {
+				currentPath = (currentPath ? currentPath + '/' : '') + segment;
+
+				// Nếu đã có trong cache, sử dụng ID đã lưu
+				if (folderIdCache[currentPath]) {
+					currentParentId = folderIdCache[currentPath];
+					continue;
+				}
+
+				// Tìm kiếm Folder trong thư mục cha hiện tại
+				const query = `name = '${segment.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and '${currentParentId}' in parents`;
+				const searchRes = await gapi.client.drive.files.list({
+					q: query,
+					fields: 'files(id)',
+					pageSize: 1,
+				});
+
+				if (searchRes.result.files.length > 0) {
+					// Folder đã tồn tại
+					currentParentId = searchRes.result.files[0].id;
+				} else {
+					// Tạo Folder mới
+					const folderMetadata = {
+						'name': segment,
+						'mimeType': 'application/vnd.google-apps.folder',
+						'parents': [currentParentId],
+					};
+
+					const createRes = await gapi.client.drive.files.create({
+						resource: folderMetadata,
+						fields: 'id',
+					});
+					currentParentId = createRes.result.id;
+				}
+
+				// Lưu vào cache
+				folderIdCache[currentPath] = currentParentId;
+			}
+			return currentParentId;
+		}
+
+		// Upload file
+		uploadButton.onclick = async () => {
+			uploadStatus.classList.remove("error", "success");
+			const token = gapi.client.getToken();
+			if (!token) {
+				uploadStatus.textContent = "Bạn cần đăng nhập Google trước.";
+				uploadStatus.classList.add("error");
+				return;
+			}
+
+			const files = fileInput.files;
+			if (files.length === 0) {
+				uploadStatus.textContent = "Vui lòng chọn file hoặc thư mục để upload.";
+				uploadStatus.classList.add("error");
+				return;
+			}
+
+			uploadButton.disabled = true;
+			listButton.disabled = true;
+			
+			let successCount = 0;
+			let errorCount = 0;
+			
+			uploadStatus.textContent = `Đang chuẩn bị upload ${files.length} mục...`;
+
+			try {
+				// Reset cache folder cho mỗi lần upload mới
+				Object.keys(folderIdCache).forEach(k => delete folderIdCache[k]); 
+
+				for (let i = 0; i < files.length; i++) {
+					const file = files[i];
+					
+					uploadStatus.textContent = `Đang upload ${i + 1}/${files.length}: ${file.name}...`;
+
+					// 1. Xử lý đường dẫn thư mục cha
+					let parentFolderId = 'root'; // Upload vào Drive của tôi
+
+					if (file.webkitRelativePath) {
+						// Lấy các thành phần đường dẫn thư mục (loại bỏ tên file)
+						const parts = file.webkitRelativePath.split('/');
+						const pathSegments = parts.slice(0, -1); 
+
+						if (pathSegments.length > 0) {
+							// Tạo/tìm ID của thư mục cha
+							parentFolderId = await createFolderIfNeeded(pathSegments, 'root');
+						}
+					}
+
+					// 2. Upload file vào thư mục cha đã xác định/tạo
+					const metadata = {
+						name: file.name,
+						mimeType: file.type || "application/octet-stream",
+						parents: [parentFolderId], // Gán file vào thư mục cha
+					};
+					
+					const form = new FormData();
+					form.append(
+						"metadata",
+						new Blob([JSON.stringify(metadata)], { type: "application/json" })
+					);
+					form.append("file", file);
+
+					const res = await fetch(
+						"https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,iconLink,size,mimeType",
+						{
+							method: "POST",
+							headers: new Headers({
+								Authorization: "Bearer " + token.access_token,
+							}),
+							body: form,
+						}
+					);
+
+					if (!res.ok) {
+						errorCount++;
+						console.error("Lỗi upload file:", file.name, await res.text());
+					} else {
+						successCount++;
+					}
+				}
+				
+				// Cập nhật trạng thái cuối cùng
+				const totalUploaded = successCount + errorCount;
+				if (errorCount === 0) {
+					uploadStatus.textContent = `✅ Upload thành công ${successCount}/${totalUploaded} mục!`;
+					uploadStatus.classList.add("success");
+					uploadStatus.classList.remove("error");
+				} else {
+					uploadStatus.textContent = `⚠️ Hoàn tất: Upload thành công ${successCount}/${totalUploaded} mục, thất bại ${errorCount} mục. Kiểm tra console để biết chi tiết.`;
+					uploadStatus.classList.add("error");
+					uploadStatus.classList.remove("success");
+				}
+
+				await listFiles();
+				
+			} catch (error) {
+				console.error(error);
+				uploadStatus.textContent = "Lỗi upload tổng quát: " + error.message;
+				uploadStatus.classList.add("error");
+				uploadStatus.classList.remove("success");
+			} finally {
+				uploadButton.disabled = false;
+				listButton.disabled = false;
+			}
+		};
+        
+        // =========================================================
+        // === HÀM LIỆT KÊ FILE ===
+        // =========================================================
+
+		// List files khi bấm nút
+		listButton.onclick = () => {
+			 listFiles();
+		};
+
+		// Hàm liệt kê file
+		async function listFiles() {
+			 listStatus.classList.remove("error", "success");
+			 const token = gapi.client.getToken();
+			 if (!token) {
+			listStatus.textContent = "Bạn cần đăng nhập Google trước.";
+			listStatus.classList.add("error");
+			return;
+			 }
+
+			 listButton.disabled = true;
+			 listStatus.textContent = "Đang tải danh sách file...";
+
+			 try {
+			const response = await gapi.client.drive.files.list({
+				 pageSize: 20,
+				 fields: "files(id,name,mimeType,modifiedTime,iconLink,webViewLink,size)",
+				 orderBy: "modifiedTime desc",
+				 // Lọc: Chỉ lấy các mục nằm trực tiếp trong thư mục gốc ('root') của Drive của tôi
+				 q: "'root' in parents", 
+			});
+
+			const files = response.result.files || [];
+			filesTbody.innerHTML = "";
+
+			if (files.length === 0) {
+				 listStatus.textContent = "Không tìm thấy file/thư mục nào trong thư mục gốc của Drive của bạn.";
+				 listStatus.classList.add("success");
+				 return;
+			}
+
+			for (const file of files) {
+				 const tr = document.createElement("tr");
+
+				 const nameTd = document.createElement("td");
+				 nameTd.textContent = file.name || "(Không tên)";
+
+				 const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
+
+				 const typeTd = document.createElement("td");
+				 const tag = document.createElement("span");
+				 tag.className = "tag";
+				 tag.textContent = isFolder ? "📁 Folder" : (file.mimeType || "Unknown");	
+				 typeTd.appendChild(tag);
+
+				 const modifiedTd = document.createElement("td");
+				 modifiedTd.textContent = file.modifiedTime
+				? new Date(file.modifiedTime).toLocaleString()
+				: "";
+
+				 const sizeTd = document.createElement("td");
+				 sizeTd.textContent = isFolder	
+				? "-" // Thư mục không hiển thị kích thước
+				: (file.size ? formatBytes(parseInt(file.size, 10)) : "-");
+
+				 const linkTd = document.createElement("td");
+				 if (file.webViewLink) {
+				const a = document.createElement("a");
+				a.href = file.webViewLink;
+				a.target = "_blank";
+				a.rel = "noopener noreferrer";
+				a.className = "link";
+				a.textContent = "Mở";
+				linkTd.appendChild(a);
+				 } else {
+				linkTd.textContent = "-";
+				 }
+
+				 tr.appendChild(nameTd);
+				 tr.appendChild(typeTd);
+				 tr.appendChild(modifiedTd);
+				 tr.appendChild(sizeTd);
+				 tr.appendChild(linkTd);
+
+				 filesTbody.appendChild(tr);
+			}
+
+			listStatus.textContent = `Đã tải ${files.length} mục.`;
+			listStatus.classList.add("success");
+			 } catch (error) {
+			console.error(error);
+			listStatus.textContent = "Lỗi tải danh sách file: " + error.message;
+			listStatus.classList.add("error");
+			 } finally {
+			listButton.disabled = false;
+			 }
+		}
+
+		// Helper format size
+		function formatBytes(bytes) {
+			 if (bytes === 0) return "0 B";
+			 const k = 1024;
+			 const sizes = ["B", "KB", "MB", "GB", "TB"];
+			 const i = Math.floor(Math.log(bytes) / Math.log(k));
+			 return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+		}
+	</script>
+	 	 <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+	 <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+</body>
+</html>
