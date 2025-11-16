@@ -128,14 +128,6 @@
         </section>
         
         <section id="comicViewer" style="display:none;">
-            <div class="debug-controls">
-                <a id="openFirstDirect" class="btn green" target="_blank">Mở 00000 trực tiếp</a>
-                <a id="showConsoleBtn" class="btn" href="javascript:void(0)">Hiện Console Log</a>
-            </div>
-            <div id="viewerContainer"></div>
-
-            <h3>Console debug</h3>
-            <pre id="consoleLog" class="console" style="display:none;"></pre>
         </section>
     </main>
 
@@ -248,122 +240,74 @@
             document.getElementById('mainTitle').textContent = currentComic ? currentComic.title : folderName;
             document.getElementById('subText').textContent = 'Chế độ Debug: xem các URL ảnh được thử, mở trực tiếp và xem ảnh thu nhỏ nếu load được';
 
-            // set direct open link for convenience
-            const directOpen = document.getElementById('openFirstDirect');
-            directOpen.href = encodeURI(`${BASE_PATH}${COMIC_ROOT_FOLDER}${folderName}/00000.jpg`);
-
             // show/hide console button
             const showConsoleBtn = document.getElementById('showConsoleBtn');
             const consoleEl = document.getElementById('consoleLog');
-            showConsoleBtn.onclick = () => {
-                consoleEl.style.display = consoleEl.style.display === 'none' ? 'block' : 'none';
-            };
 
             // load in debug mode
             loadComicPagesDebug(folderName);
         }
 
         async function loadComicPagesDebug(folderName) {
-            const viewer = document.getElementById('viewerContainer');
-            viewer.innerHTML = '<p id="status-viewer">Đang tìm và tải các trang truyện (Debug mode)...</p>';
-            const statusViewerEl = document.getElementById('status-viewer');
+			const viewer = document.getElementById('viewerContainer');
+			viewer.innerHTML = '<p id="status-viewer">Đang tải trang truyện...</p>';
+			const statusViewerEl = document.getElementById('status-viewer');
 
-            let pagesLoaded = 0;
-            let consecutiveMisses = 0;
-            const maxConsecutiveMisses = 10;
+			let pagesLoaded = 0;
+			let consecutiveMisses = 0;
+			const maxConsecutiveMisses = 10;
 
-            // clear console log area
-            document.getElementById('consoleLog').textContent = '';
+			for (let i = 0; i < MAX_PAGES; i++) {
+				const pageNumber = i.toString().padStart(5, '0');
 
-            for (let i = 0; i < MAX_PAGES; i++) {
-                const pageNumber = i.toString().padStart(5, '0');
+				const jpgUrl = encodeURI(`${BASE_PATH}${COMIC_ROOT_FOLDER}${folderName}/${pageNumber}.jpg`);
+				const pngUrl = encodeURI(`${BASE_PATH}${COMIC_ROOT_FOLDER}${folderName}/${pageNumber}.png`);
 
-                // build absolute URLs using BASE_PATH
-                const jpgUrl = encodeURI(`${BASE_PATH}${COMIC_ROOT_FOLDER}${folderName}/${pageNumber}.jpg`);
-                const pngUrl = encodeURI(`${BASE_PATH}${COMIC_ROOT_FOLDER}${folderName}/${pageNumber}.png`);
+				// tạo link thumbnail ảnh
+				let found = false;
 
-                logToConsole('Trying: ' + jpgUrl);
+				if (await tryLoadImageIntoViewer(jpgUrl, viewer)) {
+					found = true;
+				} else if (await tryLoadImageIntoViewer(pngUrl, viewer)) {
+					found = true;
+				}
 
-                // create row showing links and status
-                const row = document.createElement('div');
-                row.className = 'url-row';
-                row.innerHTML = `<div><strong>Trang ${pageNumber}</strong> <span class="small">(.jpg / .png)</span></div>`;
+				if (found) {
+					pagesLoaded++;
+					consecutiveMisses = 0;
+					statusViewerEl.textContent = `Đã tải ${pagesLoaded} trang...`;
+				} else {
+					consecutiveMisses++;
+				}
 
-                const linkJ = document.createElement('a');
-                linkJ.href = jpgUrl;
-                linkJ.target = '_blank';
-                linkJ.className = 'debug-link';
-                linkJ.textContent = '.jpg';
+				if (pagesLoaded > 0 && consecutiveMisses >= maxConsecutiveMisses) {
+					break;
+				}
+			}
 
-                const linkP = document.createElement('a');
-                linkP.href = pngUrl;
-                linkP.target = '_blank';
-                linkP.className = 'debug-link';
-                linkP.textContent = '.png';
+			if (pagesLoaded === 0) {
+				viewer.innerHTML = `<p class="error">❌ Không tìm thấy trang truyện nào.</p>`;
+			} else {
+				statusViewerEl.textContent = `Đã tải xong ${pagesLoaded} trang.`;
+			}
+		}
+		
+		function tryLoadImageIntoViewer(url, viewer) {
+			return new Promise(resolve => {
+				const img = new Image();
+				img.className = "comic-page";
 
-                row.appendChild(linkJ);
-                row.appendChild(linkP);
+				img.onload = () => {
+					viewer.appendChild(img);
+					resolve(true);
+				};
+				img.onerror = () => resolve(false);
 
-                const statusSpan = document.createElement('div');
-                statusSpan.className = 'small';
-                statusSpan.textContent = 'Đang kiểm tra...';
-                row.appendChild(statusSpan);
+				img.src = url;
+			});
+		}
+	
 
-                viewer.appendChild(row);
-
-                // try jpg then png
-                let found = false;
-                if (await tryLoadImageDebug(jpgUrl)) {
-                    // add image thumbnail
-                    const img = document.createElement('img');
-                    img.src = jpgUrl;
-                    img.className = 'comic-page';
-                    row.appendChild(img);
-                    statusSpan.innerHTML = `<span class="ok">OK (.jpg)</span> — <a href="${jpgUrl}" target="_blank">Mở</a>`;
-                    logToConsole('FOUND: ' + jpgUrl);
-                    found = true;
-                } else if (await tryLoadImageDebug(pngUrl)) {
-                    const img = document.createElement('img');
-                    img.src = pngUrl;
-                    img.className = 'comic-page';
-                    row.appendChild(img);
-                    statusSpan.innerHTML = `<span class="ok">OK (.png)</span> — <a href="${pngUrl}" target="_blank">Mở</a>`;
-                    logToConsole('FOUND: ' + pngUrl);
-                    found = true;
-                } else {
-                    statusSpan.innerHTML = `<span class="err">NOT FOUND</span>`;
-                    logToConsole('NOT FOUND: ' + jpgUrl + ' and ' + pngUrl);
-                }
-
-                if (found) {
-                    pagesLoaded++;
-                    consecutiveMisses = 0;
-                    statusViewerEl.textContent = `Đã tải ${pagesLoaded} trang...`;
-                } else {
-                    consecutiveMisses++;
-                }
-
-                // stop if enough misses after starting
-                if (pagesLoaded > 0 && consecutiveMisses >= maxConsecutiveMisses) {
-                    logToConsole(`Stopping after ${consecutiveMisses} consecutive misses.`);
-                    break;
-                }
-
-                if (i > 1000 && pagesLoaded === 0) {
-                    logToConsole('No pages found after many attempts, stopping early.');
-                    break;
-                }
-            } // end for
-
-            if (pagesLoaded === 0) {
-                viewer.innerHTML = `<p class="error">❌ Lỗi: Không tìm thấy trang nào. Kiểm tra:
-                    <br>1) Thư mục <strong>book/Comic/${folderName}</strong> đã push chưa?
-                    <br>2) Tên folder/file phân biệt chữ hoa/thường?
-                    <br>3) File ảnh có tên dạng <strong>00000.jpg</strong>, <strong>00001.jpg</strong>, ...?</p>`;
-            } else {
-                statusViewerEl.textContent = `✅ Hoàn tất tải ${pagesLoaded} trang.`;
-            }
-        }
 
         // try loading image but only return boolean (don't append here)
         function tryLoadImageDebug(url) {
