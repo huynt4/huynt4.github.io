@@ -509,7 +509,7 @@
 			  pageSize: 20,
 			  fields: "files(id,name,mimeType,modifiedTime,iconLink,webViewLink,size)",
 			  orderBy: "modifiedTime desc",
-			  q: "trashed=false"
+			  q: "'root' in parents",
 			  // Không cần tham số 'q' khi dùng drive.file, API sẽ tự động lọc theo file/folder do app tạo
 			});
 
