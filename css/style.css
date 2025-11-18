@@ -1,0 +1,344 @@
+:root{
+	 	 --base-color: #59b6c7;
+	 	 
+	 	 --primary: var(--base-color);
+	 	 --bg1: color-mix(in srgb, var(--base-color) 12%, #fff); 
+	 	 --bg2: color-mix(in srgb, var(--base-color) 4%, #fff);	 
+	 	 
+	 	 --accent: rgba(0,0,0,0.05);
+	 	 --text-dark: #0b1a1f;
+	 	 --muted: #555;
+	 	 --btn-radius: 10px;
+	 	 --actions-max-width: 640px;	
+	 	 --btn-height: 48px;
+	 	 
+	 	 /* Định nghĩa padding và radius cho card ảnh */
+	 	 --photo-card-padding: 24px;
+	 	 --photo-card-radius: 28px;
+}
+
+* { box-sizing: border-box; }
+body{
+	 	 margin:0;
+	 	 /* FONT CHÍNH (BODY) - Giữ Inter để có phong cách hiện đại như ảnh */
+	 	 font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+	 	 color:var(--text-dark);
+	 	 background: linear-gradient(180deg,var(--bg1),var(--bg2));
+	 	 -webkit-font-smoothing:antialiased;
+	 	 -moz-osx-font-smoothing:grayscale;
+	 	 min-height:100vh;
+	 	 display:flex;
+	 	 align-items:stretch;
+	 	 justify-content:center;
+	 	 padding:24px;
+	 	 flex-direction: column;
+	 	 align-items: center;
+}
+
+.wrap{
+	 	 width:100%;
+	 	 max-width:1200px;
+	 	 background: transparent;
+	 	 display:flex;
+	 	 gap:40px;
+	 	 align-items:center;
+	 	 padding:40px;
+}
+
+.left, .right{
+	 	 flex:1 1 0;
+}
+
+/* SỬA QUAN TRỌNG: Thiết lập khung ảnh */
+.photo-card{
+	 	 width:100%;
+	 	 max-width:420px;
+	 	 margin: 0 auto;
+	 	 background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.4));
+	 	 
+	 	 /* SỬ DỤNG BIẾN */
+	 	 border-radius: var(--photo-card-radius);
+	 	 padding: var(--photo-card-padding); 
+	 	 
+	 	 box-shadow: 0 18px 30px rgba(0,0,0,0.12), inset 0 -6px 12px rgba(255,255,255,0.3);
+	 	 position:relative;
+	 	 overflow: hidden; 
+
+	 	 /* Khắc phục lỗi co lại: sử dụng Flexbox + Aspect Ratio */
+	 	 display: flex;
+	 	 align-items: center;
+	 	 justify-content: center;
+	 	 
+	 	 /* Tỉ lệ 1:1 cho một khung hình vuông */
+	 	 aspect-ratio: 1 / 1; 
+}
+
+.photo-card::after{
+	 	 content:"";
+	 	 position:absolute;
+	 	 bottom:-18px;
+	 	 left:10%;
+	 	 width:80%;
+	 	 height:30px;
+	 	 border-radius:20px;
+	 	 filter:blur(16px);
+	 	 background: linear-gradient(90deg, rgba(0,0,0,0.08), rgba(0,0,0,0.02));
+	 	 z-index:-1;
+}
+
+/* SỬA QUAN TRỌNG: Khối Slider */
+.photo-slider {
+	 	 width: 100%; 
+	 	 height: 100%;
+	 	 position: relative;
+	 	 overflow: hidden;
+	 	 border-radius: calc(var(--photo-card-radius) - var(--photo-card-padding) / 2);
+}
+
+/* SỬA QUAN TRỌNG: Ảnh bên trong */
+.photo{
+	 	 width:100%;
+	 	 height:100%; 
+	 	 display:block;
+	 	 
+	 	 /* Áp dụng lại border-radius từ slider */
+	 	 border-radius: inherit; 
+
+	 	 object-fit:cover;
+	 	 box-shadow: 0 14px 28px rgba(0,0,0,0.06);
+	 	 position: absolute;
+	 	 top: 0;
+	 	 left: 0;
+	 	 opacity: 0;
+	 	 transition: opacity 0.8s ease-in-out;
+}
+.photo.active {
+	 	 opacity: 1; 
+}
+
+
+/* --- CÁC PHẦN CÒN LẠI GIỮ NGUYÊN --- */
+
+.intro{
+	 	 padding:20px 10px;
+	 	 max-width:600px;
+	 	 margin-left:auto;
+	 	 margin-right:auto;
+}
+
+/* SỬA FONT CHO H1 để nhất quán với phong cách sans-serif trong ảnh */
+h1{
+	 	 font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; /* Đã sửa */
+	 	 font-weight:700;
+	 	 font-size: clamp(28px, 6vw, 56px);
+	 	 letter-spacing: -0.015em;
+	 	 margin:0 0 10px 0;
+	 	 color: var(--text-dark);
+	 	 line-height:1.05;
+}
+p.lead{
+	 	 margin:0 0 22px 0;
+	 	 color:var(--muted);
+	 	 font-size:16px;
+}
+
+.actions{
+	 	 display:flex;
+	 	 flex-direction:column;
+	 	 gap:16px;
+	 	 margin-bottom:6px;
+	 	 width:100%;
+	 	 max-width: var(--actions-max-width);
+	 	 margin-left:auto;
+	 	 margin-right:auto;
+	 	 align-items:center;
+}
+
+/* ----- BUTTON STYLE ----- */
+.btn{
+	 	 display:inline-flex;
+	 	 align-items:center;
+	 	 justify-content:center;
+	 	 text-decoration:none;
+	 	 color:var(--text-dark);
+	 	 border:1px solid rgba(0,0,0,0.25);
+	 	 background: white;
+	 	 padding:0 20px;
+	 	 height: var(--btn-height);
+	 	 border-radius: 10px;
+	 	 font-weight:600;
+	 	 text-align:center;
+	 	 cursor:pointer;
+	 	 transition: all .18s ease;
+	 	 box-shadow: 0 6px 10px rgba(0,0,0,0.04);
+	 	 width: 90%;
+	 	 max-width:520px;
+	 	 box-sizing: border-box;
+	 	 letter-spacing: .6px;
+	 	 font-size:14px;
+}
+
+.btn:hover{
+	 	 background: color-mix(in srgb, var(--primary) 24%, white);
+	 	 transform: translateY(-2px);
+	 	 box-shadow: 0 12px 26px color-mix(in srgb, var(--primary) 28%, black);
+}
+
+.btn.primary{
+	 	 background: color-mix(in srgb, var(--primary) 12%, white);
+	 	 color: var(--text-dark);
+	 	 border:1px solid color-mix(in srgb, var(--primary) 35%, black);
+	 	 box-shadow: 0 8px 18px color-mix(in srgb, var(--primary) 18%, black);
+}
+.btn.primary:hover{
+	 	 background: color-mix(in srgb, var(--primary) 34%, white);
+	 	 transform: translateY(-3px);
+	 	 box-shadow: 0 14px 28px color-mix(in srgb, var(--primary) 38%, black);
+}
+
+.social{
+	 	 display:flex;
+	 	 gap:12px;
+	 	 margin-top:14px;
+	 	 width:100%;
+	 	 max-width: var(--actions-max-width);
+	 	 margin-left:auto;
+	 	 margin-right:auto;
+	 	 justify-content:center;
+	 	 align-items:center;
+}
+.social a{
+	 	 display:inline-flex;
+	 	 width:26px;
+	 	 height:26px;
+	 	 align-items:center;
+	 	 justify-content:center;
+	 	 border-radius:6px;
+	 	 background: transparent;
+	 	 text-decoration:none;
+	 	 transition: transform .15s ease, color .15s ease, background .15s ease;
+	 	 color:var(--text-dark);
+	 	 opacity:0.95;
+}
+.social a:hover{
+	 	 transform: translateY(-4px);
+	 	 color: var(--primary);
+}
+.social svg{ width:18px; height:18px; fill:var(--text-dark); opacity:0.95; }
+
+/* Bắt đầu Khối Navigation đã Dọn dẹp */
+
+/* LOẠI BỎ KHỐI .header-wrap KHÔNG CẦN THIẾT */
+/* .header-wrap { display: none; } */
+
+/* KHỐI CHUNG ĐỂ CĂN GIỮA NAVIGATION KHI TRÊN MOBILE */
+.nav-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* DESKTOP VIEW: topBar và topNav dùng position: fixed */
+.topBar{
+	 	 position:fixed;
+	 	 left:24px;
+	 	 top:18px;
+	 	 font-size:13px;
+	 	 letter-spacing:1px;
+	 	 color: rgba(0,0,0,0.6);
+	 	 font-weight:600;
+	 	 padding:6px 10px;
+	 	 background: rgba(255,255,255,0.6);
+	 	 border-radius:10px;
+	 	 box-shadow: 0 6px 14px rgba(0,0,0,0.04);
+}
+
+.topNav{
+	 	 position:fixed;
+	 	 right:24px;
+	 	 top:18px;
+	 	 display:flex;
+	 	 gap:10px;
+	 	 align-items:center;
+}
+.topNav button{
+	 	 padding:8px 12px;
+	 	 border-radius:10px;
+	 	 border: none;
+	 	 background: rgba(255,255,255,0.6);
+	 	 cursor:pointer;
+	 	 font-weight:600;
+	 	 box-shadow: 0 6px 14px rgba(0,0,0,0.04);
+}
+
+.color-label{
+	 	 font-size:13px;
+	 	 color: rgba(0,0,0,0.6);
+	 	 font-weight:600;
+	 	 display: flex;
+	 	 align-items: center;
+}
+#colorPicker{
+	 	 width:30px;
+	 	 height:30px;
+	 	 padding:0;
+	 	 border:none;
+	 	 border-radius:10px;
+	 	 cursor:pointer;
+	 	 background: rgba(255,255,255,0.6);
+	 	 box-shadow: 0 6px 14px rgba(0,0,0,0.04);
+}
+#colorPicker::-webkit-color-swatch-wrapper { padding: 0; }
+#colorPicker::-webkit-color-swatch { border: none; border-radius:10px; }
+
+
+@media (max-width:880px){
+	 	 body{ padding:16px; flex-direction: column; }
+	 	 
+	 	 /* Ẩn position:fixed cho nav trên mobile, thay vào đó dùng nav-container */
+	 	 .topBar, .topNav{ display:none; }
+
+	 	 .nav-container { 
+	 	 	 	 display: flex; /* Kích hoạt nav-container trên mobile */
+	 	 	 	 justify-content: space-between;
+	 	 	 	 align-items: center;
+	 	 	 	 padding: 0 16px;
+	 	 	 	 margin-bottom: 24px;
+	 	 	 	 width: 100%;
+	 	 	 	 max-width: 920px;
+	 	 }
+
+	 	 .nav-container .topBar, .nav-container .topNav { 
+	 	 	 	 position: static; /* Thay thế fixed bằng static */
+	 	 	 	 background: transparent; 
+	 	 	 	 box-shadow: none; 
+	 	 	 	 margin: 0;
+	 	 	 	 padding: 0;
+	 	 	 	 color: rgba(0,0,0,0.65);
+	 	 	 	 display: flex; /* Hiện lại topBar và topNav */
+	 	 	 	 align-items: center;
+	 	 }
+	 	 .nav-container .topNav{ 
+	 	 	 	 gap: 8px; 
+	 	 }
+	 	 .nav-container .topNav button{
+	 	 	 	 background: rgba(255,255,255,0.6);
+	 	 	 	 box-shadow: 0 6px 14px rgba(0,0,0,0.04);
+	 	 	 	 padding: 8px 12px;
+	 	 }
+	 	 
+	 	 .wrap{ flex-direction:column-reverse; gap:24px; padding:22px; max-width:920px; }
+	 	 .left, .right{ width:100%; }
+	 	 
+	 	 .photo-card{ max-width:340px; padding: var(--photo-card-padding); border-radius: var(--photo-card-radius); }
+
+	 	 .intro{ text-align:center; }
+	 	 .social{ justify-content:center; width:100%; gap:14px; }
+	 	 .actions{ width:92%; max-width:520px; }
+	 	 .btn{ width:100%; max-width:none; }
+}
+
+@media (max-width:420px){
+	 	 .btn{ padding:0 14px; font-size:14px; height:44px; border-radius:8px; }
+	 	 h1{ font-size:28px; }
+}
